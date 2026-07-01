@@ -1,0 +1,17 @@
+## Build & Binary Folders
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+## Visual Studio & Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## OS Files
+.DS_Store
+Thumbs.db
