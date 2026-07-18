@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.5.0" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>07af889e-51ea-409f-8e30-23970bf93382</UserSecretsId>
+    <NoWarn>$(NoWarn);NETSDK1138;ASPIRE004</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.0" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.Redis" Version="9.5.2" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.5.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Basket\Basket.csproj" />
+    <ProjectReference Include="..\..\Catalog\Catalog.csproj" />
+    <ProjectReference Include="..\..\Ordering\Ordering.csproj" />
+    <ProjectReference Include="..\..\Shared.Messaging\Shared.Messaging.csproj" />
+    <ProjectReference Include="..\..\WebApp\WebApp.csproj" />
+    <ProjectReference Include="..\..\YarpApiGateway\YarpApiGateway.csproj" />
+  </ItemGroup>
+
+</Project>
