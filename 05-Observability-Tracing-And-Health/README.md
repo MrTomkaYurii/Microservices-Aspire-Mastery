@@ -1,20 +1,32 @@
-# 05. Distributed Observability, OpenTelemetry & Health Checks
+# 05. Observability, Tracing & Health Checks
 
-> Наскрізне трасування запитів (Distributed Tracing з W3C TraceContext) через API Gateway, HTTP та RabbitMQ повідомлення, візуалізація трейсів у Jaeger та Aspire Dashboard, багаторівневі Health Checks (/health/live, /health/ready) для Kubernetes та хмарних середовищ.
+> Моніторинг, розподілене трасування та перевірка працездатності: OpenTelemetry, W3C Trace Context, кастомні `ActivitySource` та `Meter`, інтеграція з Aspire Dashboard.
 
 ## 🛠️ Стек технологій
-- **Платформа:** .NET 10 (net10.0)
-- **Оркестрація:** .NET Aspire 9.5+ / 10
-- **Брокер повідомлень:** RabbitMQ + MassTransit (Custom & Outbox)
-- **Кеш & Сховище:** Redis, SQL Server, PostgreSQL
+- **Платформа:** .NET 10 (`net10.0`)
+- **Оркестрація:** .NET Aspire (`AspireApp.ServiceDefaults`)
+- **Телеметрія:** OpenTelemetry .NET SDK
+- **Діагностика:** System.Diagnostics (`ActivitySource`, `Meter`, `Counter`, `Histogram`)
+- **Health Checks:** Microsoft.Extensions.Diagnostics.HealthChecks
 
 ---
 
-## 📂 Вміст модуля
-У цьому модулі представлені готові виробничі зразки мікросервісних компонентів та архітектурних рішень.
+## 📂 Проекти модуля
 
-## 🚀 Запуск
+### 1. `Observability.Aspire.Demo`
+Повноцінний робочий демонстраційний мікросервіс:
+- **Custom Distributed Tracing:** Власний `ActivitySource ("Mastery.DistributedShop")` зі створенням спанів (`Activity`), тегів (`shop.order.id`, `shop.customer.id`) та подій (`ActivityEvent`).
+- **Custom Metrics:** Власний `Meter ("Mastery.Shop.Metrics")` з лічильником замовлень (`shop.orders.placed`) та гістограмою затримки (`shop.order.duration.ms`).
+- **Health Checks:** Реалізація `IHealthCheck` для моніторингу затримок сторонніх провайдерів (Payment Gateway) зі статусами `Healthy` та `Degraded`.
+- **Aspire Service Defaults:** Автоматичний мапінг OTLP експортерів до Aspire Dashboard.
+
+### 🚀 Запуск
 ```bash
-cd 05-Observability-Tracing-And-Health
-dotnet build
+cd 05-Observability-Tracing-And-Health/Observability.Aspire.Demo
+dotnet run
 ```
+
+#### API Endpoints:
+- `POST /api/order` — Симуляція розподіленої обробки замовлення (повертає `TraceId`, `SpanId`, тривалість).
+- `/alive` — Liveness probe (чи живий процес).
+- `/health` — Readiness probe (перевірка стану бази, черги та Payment Gateway).
