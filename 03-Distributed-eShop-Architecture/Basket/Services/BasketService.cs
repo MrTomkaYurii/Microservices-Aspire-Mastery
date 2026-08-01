@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using RabbitMQ.Client;
@@ -19,6 +19,7 @@ public class BasketService(
 {
     public async Task<ShoppingCart?> GetBasket(string userName)
     {
+        _ = bus; // Injected for Case #2 (MassTransit publishing)
         var basket = await cache.GetOrCreateAsync(userName, async token =>
         {
             return await dbContext.ShoppingCarts

@@ -1,4 +1,4 @@
-﻿using StackExchange.Redis;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace Redis.Cache;
@@ -26,7 +26,7 @@ public class RedisCacheService(IConnectionMultiplexer redis)
             return null;
         }
 
-        return JsonSerializer.Deserialize<T>(data!, jsonSerializerOptions);
+        return JsonSerializer.Deserialize<T>((string)data!, jsonSerializerOptions);
     }
 
     public async Task SaveAsync<T>(string key, T value, TimeSpan expiry) where T : class

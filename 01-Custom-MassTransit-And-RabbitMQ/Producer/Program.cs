@@ -9,8 +9,6 @@ builder.Services.AddMassTransit(x =>
     x.UsingRabbitMq();
 });
 
-builder.Services.AddMassTransitHostedService();
-
 // Add services to the container.
 builder.Services.AddControllers();
 

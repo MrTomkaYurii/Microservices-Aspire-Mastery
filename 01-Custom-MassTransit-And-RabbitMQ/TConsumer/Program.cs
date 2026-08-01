@@ -1,11 +1,15 @@
-﻿using MassTransit;
+using MassTransit;
 using MesBrConsumer;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
 
-        Console.Write("Enter queue name: ");
+        Console.Write("Enter queue name (default: 'test-queue'): ");
         var queue = Console.ReadLine();
+        if (string.IsNullOrWhiteSpace(queue))
+        {
+            queue = "test-queue";
+        }
 
 services.AddMassTransit(x =>
 {
