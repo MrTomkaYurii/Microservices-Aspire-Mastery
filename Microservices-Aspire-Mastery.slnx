@@ -34,4 +34,10 @@
     <Project Path="03-Distributed-eShop-Architecture/AspireApp/AspireApp.AppHost/AspireApp.AppHost.csproj" />
     <Project Path="03-Distributed-eShop-Architecture/AspireApp/AspireApp.ServiceDefaults/AspireApp.ServiceDefaults.csproj" />
   </Folder>
+  <Folder Name="/04-Transactional-Outbox-And-Resilience/">
+    <Project Path="04-Transactional-Outbox-And-Resilience/Outbox.Resilience.Demo/Outbox.Resilience.Demo.csproj" />
+  </Folder>
+  <Folder Name="/05-Observability-Tracing-And-Health/">
+    <Project Path="05-Observability-Tracing-And-Health/Observability.Aspire.Demo/Observability.Aspire.Demo.csproj" />
+  </Folder>
 </Solution>

@@ -59,6 +59,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApp", "03-Distributed-eS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YarpApiGateway", "03-Distributed-eShop-Architecture\YarpApiGateway\YarpApiGateway.csproj", "{EF05B351-DF97-4817-BC12-F52F77E43EA4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "04-Transactional-Outbox-And-Resilience", "04-Transactional-Outbox-And-Resilience", "{DF7F30C2-AAA4-F895-C088-58DBB7E82B4B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Outbox.Resilience.Demo", "04-Transactional-Outbox-And-Resilience\Outbox.Resilience.Demo\Outbox.Resilience.Demo.csproj", "{CB00C258-8942-44C6-866E-07F18C910D19}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "05-Observability-Tracing-And-Health", "05-Observability-Tracing-And-Health", "{DCE52B8C-12F2-33E4-FA5D-49B7AE99D704}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Observability.Aspire.Demo", "05-Observability-Tracing-And-Health\Observability.Aspire.Demo\Observability.Aspire.Demo.csproj", "{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -321,6 +329,30 @@ Global
 		{EF05B351-DF97-4817-BC12-F52F77E43EA4}.Release|x64.Build.0 = Release|Any CPU
 		{EF05B351-DF97-4817-BC12-F52F77E43EA4}.Release|x86.ActiveCfg = Release|Any CPU
 		{EF05B351-DF97-4817-BC12-F52F77E43EA4}.Release|x86.Build.0 = Release|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Debug|x64.Build.0 = Debug|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Debug|x86.Build.0 = Debug|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Release|x64.ActiveCfg = Release|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Release|x64.Build.0 = Release|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Release|x86.ActiveCfg = Release|Any CPU
+		{CB00C258-8942-44C6-866E-07F18C910D19}.Release|x86.Build.0 = Release|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Debug|x64.Build.0 = Debug|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Debug|x86.Build.0 = Debug|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Release|x64.ActiveCfg = Release|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Release|x64.Build.0 = Release|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Release|x86.ActiveCfg = Release|Any CPU
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -351,5 +383,7 @@ Global
 		{628089D0-368C-4C71-80EA-0DF700706738} = {3D59D869-54BC-CB7C-1ACC-53608A6266D0}
 		{F05501AA-5E4A-4024-A66A-FC2F1A71EB69} = {3D59D869-54BC-CB7C-1ACC-53608A6266D0}
 		{EF05B351-DF97-4817-BC12-F52F77E43EA4} = {3D59D869-54BC-CB7C-1ACC-53608A6266D0}
+		{CB00C258-8942-44C6-866E-07F18C910D19} = {DF7F30C2-AAA4-F895-C088-58DBB7E82B4B}
+		{4ECC39E8-67DE-4A82-B2C2-DA7258E51B9A} = {DCE52B8C-12F2-33E4-FA5D-49B7AE99D704}
 	EndGlobalSection
 EndGlobal
