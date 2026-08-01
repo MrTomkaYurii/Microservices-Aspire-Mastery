@@ -75,8 +75,8 @@ At-Least-Once Delivery")]
 | **01** | **[Custom MassTransit & RabbitMQ](01-Custom-MassTransit-And-RabbitMQ)** | Ручна детальна збірка MassTransit без автоматичної магії: створення топологій брокера (Fanout/Direct/Topic), черги, Dead-Letter Exchanges, обробка помилок та повторні спроби (Retry Policies). |
 | **02** | **[Aspire Fundamentals & Dashboard](02-Aspire-Fundamentals-And-Dashboard)** | Оркестрація мікросервісів у коді C#: проєкт AppHost, ServiceDefaults, Redis кеш, підключення контейнерів через Aspire, Service Discovery та інтерактивний Dashboard. |
 | **03** | **[Distributed eShop Architecture](03-Distributed-eShop-Architecture)** | Повнофункціональна масштабована система: Catalog API, кошик Basket API на Redis, Ordering API на базі Clean Architecture, спільні контракти подій та зворотний проксі YARP Gateway. |
-| **04** | **[Transactional Outbox & Resilience](04-Transactional-Outbox-And-Resilience)** | Надійність на рівні Enterprise: усунення проблеми подвійного запису через Transactional Outbox, ідемпотентність споживачів та налаштування політик Polly (Exponential backoff, Jitter, Circuit Breaker). |
-| **05** | **[Observability, Tracing & Health](05-Observability-Tracing-And-Health)** | Наскрізне розподілене трасування (OpenTelemetry + W3C TraceContext) крізь HTTP та RabbitMQ, візуалізація спанів у Jaeger/Dashboard та дворівневі Health Checks (Liveness/Readiness). |
+| **04** | **[Transactional Outbox & Resilience](04-Transactional-Outbox-And-Resilience)** | Надійність на рівні Enterprise: усунення проблеми подвійного запису через Transactional Outbox, ідемпотентність споживачів, налаштування політик Polly (Exponential backoff, Jitter, Circuit Breaker) та готовий демонстраційний проєкт `Outbox.Resilience.Demo`. |
+| **05** | **[Observability, Tracing & Health](05-Observability-Tracing-And-Health)** | Наскрізне розподілене трасування (OpenTelemetry + W3C TraceContext) крізь HTTP та RabbitMQ, кастомні `ActivitySource` / `Meter`, візуалізація спанів в Aspire Dashboard, дворівневі Health Checks та готовий проєкт `Observability.Aspire.Demo`. |
 
 ---
 
