@@ -1,32 +1,36 @@
-# 05. Observability, Tracing & Health Checks
+# 06. Observability & Centralized Logging (.NET 10 & Aspire)
 
-> Моніторинг, розподілене трасування та перевірка працездатності: OpenTelemetry, W3C Trace Context, кастомні `ActivitySource` та `Meter`, інтеграція з Aspire Dashboard.
-
-## 🛠️ Стек технологій
-- **Платформа:** .NET 10 (`net10.0`)
-- **Оркестрація:** .NET Aspire (`AspireApp.ServiceDefaults`)
-- **Телеметрія:** OpenTelemetry .NET SDK
-- **Діагностика:** System.Diagnostics (`ActivitySource`, `Meter`, `Counter`, `Histogram`)
-- **Health Checks:** Microsoft.Extensions.Diagnostics.HealthChecks
+> **Повноцінний практичний модуль зі спостережуваності розподілених систем:**  
+> Дворежимні перевірки здоров'я (`/alive` vs `/health`), наскрізний стандарт W3C TraceContext крізь сервіси, метрики OpenTelemetry (Counter, Histogram, Gauge) та централізоване логування у **Seq** через Serilog.
 
 ---
 
-## 📂 Проекти модуля
+## 🛠️ Стек технологій
+- **Платформа:** .NET 10 (net10.0)
+- **Оркестрація:** .NET Aspire 9.5
+- **Спостережуваність:** OpenTelemetry (.NET Extensions), W3C TraceContext
+- **Логування:** Serilog + Serilog.Sinks.Seq
+- **Сервер збору логів:** Seq (контейнер у Aspire AppHost)
+- **Документація:** Swagger UI / OpenAPI
 
-### 1. `Observability.Aspire.Demo`
-Повноцінний робочий демонстраційний мікросервіс:
-- **Custom Distributed Tracing:** Власний `ActivitySource ("Mastery.DistributedShop")` зі створенням спанів (`Activity`), тегів (`shop.order.id`, `shop.customer.id`) та подій (`ActivityEvent`).
-- **Custom Metrics:** Власний `Meter ("Mastery.Shop.Metrics")` з лічильником замовлень (`shop.orders.placed`) та гістограмою затримки (`shop.order.duration.ms`).
-- **Health Checks:** Реалізація `IHealthCheck` для моніторингу затримок сторонніх провайдерів (Payment Gateway) зі статусами `Healthy` та `Degraded`.
-- **Aspire Service Defaults:** Автоматичний мапінг OTLP експортерів до Aspire Dashboard.
+---
 
-### 🚀 Запуск
+## 📂 Структура проєкту
+
+- **`Aspire.AppHost`** — оркестратор Aspire, що піднімає контейнер Seq та зв'язує його з API (Порт дашборду: `17006`).
+- **`Aspire.ServiceDefaults`** — спільні налаштування OpenTelemetry, OTLP експортерів та Health Checks.
+- **`Orders.Api`** — бізнес-сервіс із чотирма покроковими контролерами:
+  - `Step1_HealthChecksController` — дворівнева діагностика Liveness vs Readiness.
+  - `Step2_DistributedTracingController` — наскрізні Spans, TraceId та Baggage.
+  - `Step3_MetricsController` — вимірювання RPS, Latency через Meter/Counter/Histogram.
+  - `Step4_CentralizedLoggingController` — структуровані події з контекстними Scopes у Seq.
+
+Детальний опис класів та рух даних дивіться у [STRUCTURE-AND-DATA-FLOW.md](STRUCTURE-AND-DATA-FLOW.md).
+
+---
+
+## 🚀 Швидкий запуск
 ```bash
-cd 05-Observability-Tracing-And-Health/Observability.Aspire.Demo
-dotnet run
+dotnet run --project Aspire.AppHost/Aspire.AppHost.csproj
 ```
-
-#### API Endpoints:
-- `POST /api/order` — Симуляція розподіленої обробки замовлення (повертає `TraceId`, `SpanId`, тривалість).
-- `/alive` — Liveness probe (чи живий процес).
-- `/health` — Readiness probe (перевірка стану бази, черги та Payment Gateway).
+Відкрийте веб-панель Aspire за адресою: **https://localhost:17006**
