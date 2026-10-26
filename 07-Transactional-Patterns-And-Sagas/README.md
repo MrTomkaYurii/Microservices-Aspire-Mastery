@@ -1,32 +1,36 @@
-# 04. Transactional Outbox Pattern & Polly Resilience
+# 07. Transactional Patterns & Sagas (.NET 10 & Aspire)
 
-> Гарантії надійності в розподілених системах: патерн Transactional Outbox для усунення подвійного запису (Dual-Write Problem), фоновий `OutboxPublisherWorker`, та політики стійкості **Polly v8** (Exponential Backoff with Jitter, Circuit Breaker).
-
-## 🛠️ Стек технологій
-- **Платформа:** .NET 10 (`net10.0`)
-- **Стійкість:** Polly v8 (`Polly.Core` 8.5+)
-- **ORM:** Entity Framework Core 9/10
-- **Патерни:** Transactional Outbox, Guaranteed At-Least-Once Delivery, Circuit Breaker, Exponential Retry with Jitter
+> **Виробничий модуль з патернів розподіленої узгодженості та надійності:**  
+> Вирішення проблеми Dual-Write, патерн Transactional Outbox (як кастомний з конвеєром стійкості **Polly v8**, так і нативний **MassTransit EF Core Outbox**), а також Саги з компенсуючими транзакціями.
 
 ---
 
-## 📂 Проекти модуля
+## 🛠️ Стек технологій
+- **Платформа:** .NET 10 (net10.0)
+- **Оркестрація:** .NET Aspire 9.5
+- **База даних:** PostgreSQL (Npgsql + EF Core 9)
+- **Брокер повідомлень:** RabbitMQ + MassTransit 8.3
+- **Стійкість та відмовостійкість:** Polly v8 (ResiliencePipeline, Exponential Backoff, Jitter, Circuit Breaker)
+- **Документація:** Swagger UI / OpenAPI
 
-### 1. `Outbox.Resilience.Demo`
-Повноцінний робочий демонстраційний мікросервіс:
-- **Атомарний запис:** Замовлення (`Order`) та подія для публікації (`OutboxMessage`) записуються в одній транзакції EF Core.
-- **Фоновий процесор:** `OutboxPublisherWorker` (`BackgroundService`) періодично вичитує непозначені повідомлення.
-- **Polly v8 Pipeline:**
-  - `AddRetry`: 3 спроби з експоненційною затримкою та jitter.
-  - `AddCircuitBreaker`: Автоматичне розмикання ланцюга при збоях брокера повідомлень (>50% помилок за 10 сек).
+---
 
-### 🚀 Запуск
+## 📂 Структура проєкту
+
+- **`Aspire.AppHost`** — оркестратор Aspire, що піднімає PostgreSQL та RabbitMQ і підключає сервіс замовлень (Порт дашборду: `17007`).
+- **`Aspire.ServiceDefaults`** — спільні налаштування OpenTelemetry, OTLP та Health Checks.
+- **`Checkout.Api`** — бізнес-сервіс із чотирма покроковими контролерами:
+  - `Step1_DualWriteProblemController` — наочна симуляція розсинхронізації між БД та брокером.
+  - `Step2_TransactionalOutboxController` — атомарний запис події в таблицю Outbox та фоновий воркер з Polly v8.
+  - `Step3_MassTransitOutboxController` — використання `AddEntityFrameworkOutbox` для безпечного масштабування.
+  - `Step4_SagaStateMachineController` — покрокове виконання саги та компенсуючі транзакції при збої складу.
+
+Повний опис потоків даних та діаграм дивіться у [STRUCTURE-AND-DATA-FLOW.md](STRUCTURE-AND-DATA-FLOW.md).
+
+---
+
+## 🚀 Швидкий запуск
 ```bash
-cd 04-Transactional-Outbox-And-Resilience/Outbox.Resilience.Demo
-dotnet run
+dotnet run --project Aspire.AppHost/Aspire.AppHost.csproj
 ```
-
-#### API Endpoints:
-- `POST /api/orders` — Створення замовлення та збереження події в Outbox (повертає `202 Accepted`).
-- `GET /api/orders` — Список замовлень.
-- `GET /api/outbox` — Журнал Outbox повідомлень та їхніх статусів публікації.
+Відкрийте веб-панель Aspire за адресою: **https://localhost:17007**
