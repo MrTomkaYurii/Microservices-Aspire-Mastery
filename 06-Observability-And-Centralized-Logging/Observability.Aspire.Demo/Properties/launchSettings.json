@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Observability.Aspire.Demo": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:52891;http://localhost:52893"
+    }
+  }
+}

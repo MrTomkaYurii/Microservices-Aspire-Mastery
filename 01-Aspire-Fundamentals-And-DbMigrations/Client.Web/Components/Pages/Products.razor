@@ -1,0 +1,61 @@
+@page "/products"
+@attribute [StreamRendering(true)]
+@attribute [OutputCache(Duration = 5)]
+@inject CatalogApiClient CatalogApi
+
+<PageTitle>Каталог товарів (.NET Aspire Service Discovery)</PageTitle>
+
+<h1>📦 Каталог товарів</h1>
+<p class="text-muted">Дані завантажуються з мікросервісу <code>catalog-api</code> через Aspire Service Discovery.</p>
+
+@if (products is null)
+{
+    <p><em>Завантаження товарів із бази даних PostgreSQL...</em></p>
+}
+else if (products.Length == 0)
+{
+    <div class="alert alert-warning">Товарів у каталозі не знайдено. Перевірте роботу <code>Catalog.DbMigrator</code>.</div>
+}
+else
+{
+    <table class="table table-hover table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Назва товару</th>
+                <th>Категорія</th>
+                <th>Опис</th>
+                <th>Ціна</th>
+                <th>Залишок</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in products)
+            {
+                <tr>
+                    <td><strong>@product.Name</strong></td>
+                    <td><span class="badge bg-secondary">@product.Category</span></td>
+                    <td>@product.Description</td>
+                    <td><span class="text-success fw-bold">@product.Price.ToString("C")</span></td>
+                    <td>@product.StockQuantity шт.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private ProductItem[]? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            products = await CatalogApi.GetProductsAsync();
+        }
+        catch (Exception ex)
+        {
+            products = [];
+            Console.WriteLine($"Помилка завантаження товарів: {ex.Message}");
+        }
+    }
+}

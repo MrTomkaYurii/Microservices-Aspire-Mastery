@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Aspire.AppHost/Aspire.AppHost.csproj" />
+  <Project Path="Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+  <Project Path="Catalog.Api/Catalog.Api.csproj" />
+  <Project Path="Catalog.DbMigrator/Catalog.DbMigrator.csproj" />
+  <Project Path="Client.Web/Client.Web.csproj" />
+</Solution>
