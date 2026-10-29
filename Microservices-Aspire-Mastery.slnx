@@ -1,5 +1,11 @@
 <Solution>
+  <Folder Name="/Documentation/">
+    <File Path="README.md" />
+  </Folder>
+
   <Folder Name="/01-Aspire-Fundamentals-And-DbMigrations/">
+    <File Path="01-Aspire-Fundamentals-And-DbMigrations/README.md" />
+    <File Path="01-Aspire-Fundamentals-And-DbMigrations/STRUCTURE-AND-DATA-FLOW.md" />
     <Project Path="01-Aspire-Fundamentals-And-DbMigrations/Aspire.AppHost/Aspire.AppHost.csproj" />
     <Project Path="01-Aspire-Fundamentals-And-DbMigrations/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
     <Project Path="01-Aspire-Fundamentals-And-DbMigrations/Catalog.Api/Catalog.Api.csproj" />
@@ -8,6 +14,8 @@
   </Folder>
 
   <Folder Name="/02-Centralized-Caching-Redis/">
+    <File Path="02-Centralized-Caching-Redis/README.md" />
+    <File Path="02-Centralized-Caching-Redis/STRUCTURE-AND-DATA-FLOW.md" />
     <Project Path="02-Centralized-Caching-Redis/Aspire.AppHost/Aspire.AppHost.csproj" />
     <Project Path="02-Centralized-Caching-Redis/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
     <Project Path="02-Centralized-Caching-Redis/Basket.Api/Basket.Api.csproj" />
@@ -15,6 +23,8 @@
   </Folder>
 
   <Folder Name="/03-RabbitMQ-LowLevel/">
+    <File Path="03-RabbitMQ-LowLevel/README.md" />
+    <File Path="03-RabbitMQ-LowLevel/STRUCTURE-AND-DATA-FLOW.md" />
     <Project Path="03-RabbitMQ-LowLevel/Aspire.AppHost/Aspire.AppHost.csproj" />
     <Project Path="03-RabbitMQ-LowLevel/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
     <Project Path="03-RabbitMQ-LowLevel/Sender.Api/Sender.Api.csproj" />
@@ -22,6 +32,8 @@
   </Folder>
 
   <Folder Name="/04-Event-Driven-MassTransit/">
+    <File Path="04-Event-Driven-MassTransit/README.md" />
+    <File Path="04-Event-Driven-MassTransit/STRUCTURE-AND-DATA-FLOW.md" />
     <Project Path="04-Event-Driven-MassTransit/Aspire.AppHost/Aspire.AppHost.csproj" />
     <Project Path="04-Event-Driven-MassTransit/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
     <Project Path="04-Event-Driven-MassTransit/Contracts/Contracts.csproj" />
@@ -30,6 +42,8 @@
   </Folder>
 
   <Folder Name="/05-Synchronous-Transport-gRPC/">
+    <File Path="05-Synchronous-Transport-gRPC/README.md" />
+    <File Path="05-Synchronous-Transport-gRPC/STRUCTURE-AND-DATA-FLOW.md" />
     <Project Path="05-Synchronous-Transport-gRPC/Aspire.AppHost/Aspire.AppHost.csproj" />
     <Project Path="05-Synchronous-Transport-gRPC/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
     <Project Path="05-Synchronous-Transport-gRPC/Inventory.Grpc/Inventory.Grpc.csproj" />

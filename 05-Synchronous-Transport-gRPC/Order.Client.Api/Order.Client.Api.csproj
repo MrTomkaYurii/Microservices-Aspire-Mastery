@@ -25,4 +25,9 @@
     <Protobuf Include="..\Inventory.Grpc\Protos\inventory.proto" GrpcServices="Client" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\README.md" Link="Docs\README.md" />
+    <None Include="..\STRUCTURE-AND-DATA-FLOW.md" Link="Docs\STRUCTURE-AND-DATA-FLOW.md" />
+  </ItemGroup>
+
 </Project>

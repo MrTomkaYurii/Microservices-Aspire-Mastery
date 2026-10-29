@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Documentation/">
+    <File Path="README.md" />
+    <File Path="STRUCTURE-AND-DATA-FLOW.md" />
+  </Folder>
   <Project Path="Aspire.AppHost/Aspire.AppHost.csproj" />
   <Project Path="Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
   <Project Path="Basket.Api/Basket.Api.csproj" />
