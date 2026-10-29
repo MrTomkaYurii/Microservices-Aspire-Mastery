@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Aspire.AppHost/Aspire.AppHost.csproj" />
+  <Project Path="Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+  <Project Path="Basket.Api/Basket.Api.csproj" />
+  <Project Path="Pricing.Api/Pricing.Api.csproj" />
+</Solution>
