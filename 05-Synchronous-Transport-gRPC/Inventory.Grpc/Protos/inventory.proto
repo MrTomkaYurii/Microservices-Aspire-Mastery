@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+option csharp_namespace = "Inventory.Grpc.Protos";
+
+package inventory;
+
+// Сервіс управління залишками на складі через бінарний RPC
+service InventoryService {
+  // 1. Отримати інформацію про залишок конкретного товару (Unary call)
+  rpc GetProductStock (ProductStockRequest) returns (ProductStockResponse);
+
+  // 2. Атомарно зарезервувати товар під замовлення (Unary call)
+  rpc ReserveStock (ReserveStockRequest) returns (ReserveStockResponse);
+
+  // 3. Серверний стрімінг: повертає потік статусів для списку товарів (Server Streaming)
+  rpc GetStockStream (StockStreamRequest) returns (stream ProductStockResponse);
+}
+
+message ProductStockRequest {
+  string product_id = 1;
+}
+
+message ProductStockResponse {
+  string product_id = 1;
+  string product_name = 2;
+  int32 available_quantity = 3;
+  double unit_price = 4;
+  bool in_stock = 5;
+}
+
+message ReserveStockRequest {
+  string product_id = 1;
+  int32 quantity = 2;
+  string order_id = 3;
+}
+
+message ReserveStockResponse {
+  bool success = 1;
+  string message = 2;
+  string reservation_id = 3;
+  int32 remaining_stock = 4;
+}
+
+message StockStreamRequest {
+  repeated string product_ids = 1;
+}

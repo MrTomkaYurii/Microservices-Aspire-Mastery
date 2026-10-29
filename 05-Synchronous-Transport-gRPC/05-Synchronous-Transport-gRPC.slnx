@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Aspire.AppHost/Aspire.AppHost.csproj" />
+  <Project Path="Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+  <Project Path="Inventory.Grpc/Inventory.Grpc.csproj" />
+  <Project Path="Order.Client.Api/Order.Client.Api.csproj" />
+</Solution>
