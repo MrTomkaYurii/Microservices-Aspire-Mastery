@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Aspire.AppHost/Aspire.AppHost.csproj" />
+  <Project Path="Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+  <Project Path="Receiver.Worker/Receiver.Worker.csproj" />
+  <Project Path="Sender.Api/Sender.Api.csproj" />
+</Solution>
