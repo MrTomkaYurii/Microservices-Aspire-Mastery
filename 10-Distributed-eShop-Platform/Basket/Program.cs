@@ -1,81 +1,85 @@
-
+﻿using System.Reflection;
+using Basket.Data;
+using Basket.Data.Processors;
+using Basket.Endpoints;
+using Basket.Services;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Hosting;
-
-using static MassTransit.Logging.DiagnosticHeaders.Messaging;
+using RabbitMQ.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// =========================================================================================
+// 🎯 МОДУЛЬ 10: BASKET SERVICE - КОШИК ПОКУПЦЯ (REDIS HYBRIDCACHE + OUTBOX)
+// =========================================================================================
+
 builder.AddServiceDefaults();
 
+// 1. База даних PostgreSQL для персистентного кошика
 builder.AddNpgsqlDbContext<BasketDbContext>(connectionName: "basketdb");
 
+// 2. Redis + HybridCache (.NET 10)
 builder.AddRedisDistributedCache(connectionName: "cache");
-
 builder.Services.AddHybridCache(options =>
 {    
     options.DefaultEntryOptions = new HybridCacheEntryOptions
     {
         Expiration = TimeSpan.FromMinutes(5),
-        LocalCacheExpiration = TimeSpan.FromMinutes(1),
-        Flags = HybridCacheEntryFlags.DisableLocalCache
+        LocalCacheExpiration = TimeSpan.FromMinutes(1)
     };
 });
 
 builder.Services.AddScoped<BasketService>();
 
+// 3. Клієнт зв'язку з Catalog через Aspire Service Discovery
 builder.Services.AddHttpClient<CatalogApiClient>(client =>
 {
     client.BaseAddress = new("https+http://catalog");
 });
 
-
-
-
-
-
-// ������������ RabbitMQ.Client ����� ������������
-builder.Services.AddSingleton<global::RabbitMQ.Client.IConnection>(sp =>
+// 4. Підключення RabbitMQ.Client v7
+builder.Services.AddSingleton<IConnection>(sp =>
 {
-    var factory = new global::RabbitMQ.Client.ConnectionFactory
+    var config = sp.GetRequiredService<IConfiguration>();
+    var rabbitConnectionString = config.GetConnectionString("rabbitmq");
+
+    var factory = new ConnectionFactory
     {
-        HostName = "localhost",             
-        Port = 5672,                          
-        UserName = "tomkarabbit",            
-        Password = "tomkarabbit",            
-        AutomaticRecoveryEnabled = true,    
+        AutomaticRecoveryEnabled = true,
         NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
     };
+
+    if (!string.IsNullOrWhiteSpace(rabbitConnectionString))
+    {
+        factory.Uri = new Uri(rabbitConnectionString);
+    }
+    else
+    {
+        factory.HostName = "localhost";
+        factory.Port = 5672;
+        factory.UserName = "guest";
+        factory.Password = "guest";
+    }
+
     try
     {
-        global::RabbitMQ.Client.IConnection connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
-        Console.WriteLine("[RabbitMQ] Connection established successfully.");
-        return connection;
+        return factory.CreateConnectionAsync().GetAwaiter().GetResult();
     }
     catch (Exception ex)
     {
-        throw new InvalidOperationException("Failed to connect to RabbitMQ", ex);
+        throw new InvalidOperationException("Failed to connect to RabbitMQ broker", ex);
     }
 });
 
-// MassTransit 
+// 5. MassTransit та OutboxProcessor
 builder.Services.AddMassTransitWithAssemblies(Assembly.GetExecutingAssembly());
-// MassTransit [outbox pattern]
 builder.Services.AddHostedService<OutboxProcessor>();
-
-
-
-
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 app.MapDefaultEndpoints();
-
 app.UseHttpsRedirection();
-
 app.UseMigration();
-
 app.MapBasketEndpoints();
 
 app.Run();

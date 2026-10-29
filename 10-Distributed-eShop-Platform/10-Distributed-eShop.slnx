@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Documentation/">
+    <File Path="README.md" />
+    <File Path="STRUCTURE-AND-DATA-FLOW.md" />
+  </Folder>
+  <Folder Name="/Projects/">
+    <Project Path="AspireApp/AspireApp.AppHost/AspireApp.AppHost.csproj" />
+    <Project Path="AspireApp/AspireApp.ServiceDefaults/AspireApp.ServiceDefaults.csproj" />
+    <Project Path="Catalog/Catalog.csproj" />
+    <Project Path="Basket/Basket.csproj" />
+    <Project Path="Ordering/Ordering.csproj" />
+    <Project Path="Shared.Messaging/Shared.Messaging.csproj" />
+    <Project Path="YarpApiGateway/YarpApiGateway.csproj" />
+    <Project Path="WebApp/WebApp.csproj" />
+  </Folder>
+</Solution>

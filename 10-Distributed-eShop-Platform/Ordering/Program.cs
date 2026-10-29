@@ -1,63 +1,68 @@
-
+п»їusing System.Reflection;
 using Microsoft.Extensions.Hosting;
+using Ordering.Data;
 using Ordering.EventHandlers;
+using Ordering.Services;
 using RabbitMQ.Client;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// =========================================================================================
+// рџЋЇ РњРћР”РЈР›Р¬ 10: ORDERING SERVICE - РЎР•Р Р’Р†РЎ Р—РђРњРћР’Р›Р•РќР¬ РЈ РЎРРЎРўР•РњР† ESHOP
+// =========================================================================================
+
+// 1. РЎС‚Р°РЅРґР°СЂС‚РЅС– РЅР°Р»Р°С€С‚СѓРІР°РЅРЅСЏ Aspire (OpenTelemetry, HealthChecks, Service Discovery)
 builder.AddServiceDefaults();
 
+// 2. Р‘Р°Р·Р° РґР°РЅРёС… SQL Server РґР»СЏ Р·Р±РµСЂС–РіР°РЅРЅСЏ Р·Р°РјРѕРІР»РµРЅСЊ
 builder.AddSqlServerDbContext<OrderDbContext>(connectionName: "orderdb");
 
-builder.Services.AddScoped<OrderService>(); // зареєстрований як скоуп-сервіс
+builder.Services.AddScoped<OrderService>();
 
-
-
-
-
-//-----------------------------------------------------------------------------------------------
-// налаштування RabbitMQ.Client через конфігурацію
-builder.Services.AddSingleton<global::RabbitMQ.Client.IConnection>(sp =>
+// 3. РџС–РґРєР»СЋС‡РµРЅРЅСЏ RabbitMQ.Client v7 С‡РµСЂРµР· Aspire Connection String
+builder.Services.AddSingleton<IConnection>(sp =>
 {
-    var factory = new global::RabbitMQ.Client.ConnectionFactory
+    var config = sp.GetRequiredService<IConfiguration>();
+    var rabbitConnectionString = config.GetConnectionString("rabbitmq");
+
+    var factory = new ConnectionFactory
     {
-        HostName = "localhost",             // адрес контейнера
-        Port = 5672,                        // порт RabbitMQ
-        UserName = "tomkarabbit",          // логин
-        Password = "tomkarabbit",          // пароль
-        AutomaticRecoveryEnabled = true,    // авто-восстановление соединения
+        AutomaticRecoveryEnabled = true,
         NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
     };
+
+    if (!string.IsNullOrWhiteSpace(rabbitConnectionString))
+    {
+        factory.Uri = new Uri(rabbitConnectionString);
+    }
+    else
+    {
+        factory.HostName = "localhost";
+        factory.Port = 5672;
+        factory.UserName = "guest";
+        factory.Password = "guest";
+    }
+
     try
     {
-        global::RabbitMQ.Client.IConnection connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
-        Console.WriteLine("[RabbitMQ] Connection established successfully.");
-        return connection;
+        return factory.CreateConnectionAsync().GetAwaiter().GetResult();
     }
     catch (Exception ex)
     {
-        throw new InvalidOperationException("Failed to connect to RabbitMQ", ex);
+        throw new InvalidOperationException("Failed to connect to RabbitMQ broker", ex);
     }
 });
-//Реєстрація обробника подій як хостинг-сервісу ЗАВЖДИ СІНГЛТОН
+
+// Р¤РѕРЅРѕРІРёР№ РѕР±СЂРѕР±РЅРёРє РїРѕРґС–Р№ РєРѕС€РёРєР° Р±РµР·РїРѕСЃРµСЂРµРґРЅСЊРѕ С‡РµСЂРµР· RabbitMQ.Client
 builder.Services.AddHostedService<BasketCheckoutEventHandlerWithoutMassTransit>();
-//-----------------------------------------------------------------------------------------------
-//якщо з MassTransit (автоматична реєстрація всіх консьюемрів)
+
+// MassTransit С€РёРЅР° РґР»СЏ РїРѕРґС–Р№ С‚Р° Outbox
 builder.Services.AddMassTransitWithAssemblies(Assembly.GetExecutingAssembly());
-//-----------------------------------------------------------------------------------------------
-
-
-
-
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 app.MapDefaultEndpoints();
-
 app.UseHttpsRedirection();
-
 app.UseMigration();
 
 app.MapOrderEndpoints();
