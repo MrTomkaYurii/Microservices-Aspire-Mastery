@@ -25,7 +25,10 @@
 │   ├── Program.cs                            # Налаштування DI, Controllers, Swagger, підключення RabbitMQ v7
 │   ├── Sender.Api.csproj                     # RabbitMQ.Client v7.x, Swagger, ServiceDefaults, лінк на Docs
 │   ├── Controllers/
-│   │   └── MessagesController.cs             # ASP.NET Core контролер (direct, fanout, topic, dead-letter-test)
+│   │   ├── Step1_DirectExchangeController.cs # КРОК 1: Direct Exchange (точний збіг ключа)
+│   │   ├── Step2_FanoutExchangeController.cs # КРОК 2: Fanout Exchange (широкомовна розсилка)
+│   │   ├── Step3_TopicExchangeController.cs  # КРОК 3: Topic Exchange (маски та шаблони * та #)
+│   │   └── Step4_DeadLetterAndResilienceController.cs # КРОК 4: Dead Letter Exchange, TTL та Poison Messages
 │   ├── Models/
 │   │   └── RabbitModels.cs                   # DTO-моделі для різних бірж
 │   └── Properties/launchSettings.json        # Профілі запуску
@@ -64,13 +67,25 @@ classDiagram
         +BasicNackAsync(deliveryTag, multiple, requeue)
     }
 
-    class MessagesController {
+    class Step1_DirectExchangeController {
         -IConnection _connection
-        -ILogger _logger
-        +SendDirectMessage(request) Task~IActionResult~
-        +SendFanoutMessage(request) Task~IActionResult~
-        +SendTopicMessage(request) Task~IActionResult~
-        +SendDeadLetterTest(request) Task~IActionResult~
+        +SendDirect(request) Task~IActionResult~
+    }
+
+    class Step2_FanoutExchangeController {
+        -IConnection _connection
+        +Broadcast(request) Task~IActionResult~
+    }
+
+    class Step3_TopicExchangeController {
+        -IConnection _connection
+        +SendTopic(request) Task~IActionResult~
+    }
+
+    class Step4_DeadLetterAndResilienceController {
+        -IConnection _connection
+        +SendWithTtl(request) Task~IActionResult~
+        +SendPoisonMessage() Task~IActionResult~
     }
 
     class RabbitMqConsumerWorker {
@@ -86,8 +101,10 @@ classDiagram
     }
 
     AppHost ..> IConnection : Надає рядок підключення "messaging"
-    MessagesController --> IConnection : Singleton підключення
-    MessagesController ..> IChannel : Створює короткоживучий IChannel на час публікації
+    Step1_DirectExchangeController --> IConnection : Singleton підключення
+    Step2_FanoutExchangeController --> IConnection : Singleton підключення
+    Step3_TopicExchangeController --> IConnection : Singleton підключення
+    Step4_DeadLetterAndResilienceController --> IConnection : Singleton підключення
     RabbitMqConsumerWorker --> IConnection : Singleton підключення
     RabbitMqConsumerWorker ..> IChannel : Створює довгоживучий IChannel для прослуховування черг
     RabbitMqConsumerWorker --> AsyncEventingBasicConsumer : Реєструє асинхронні колбеки обробки

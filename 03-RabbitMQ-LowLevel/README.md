@@ -96,6 +96,17 @@ PrefetchCount = 5, Manual Ack/Nack)"]
 
 ---
 
+## 📂 Склад покрокових контролерів продюсера (`Sender.Api`)
+
+| Контролер | Маршрут (Route) | Що демонструє |
+| :--- | :--- | :--- |
+| **`Step1_DirectExchangeController`** | `/api/step1-direct/send` | Пряма доставка за точним ключем (`orders.critical` або `orders.regular`). |
+| **`Step2_FanoutExchangeController`** | `/api/step2-fanout/broadcast` | Широкомовна розсилка без аналізу ключів усім підключеним чергам. |
+| **`Step3_TopicExchangeController`** | `/api/step3-topic/send` | Маршрутизація за шаблонами та масками слів через крапку (`*` та `#`). |
+| **`Step4_DeadLetterAndResilienceController`** | `/api/step4-dead-letter/...` | Обробка помилок: таймаути TTL та відхилення "отруйних" повідомлень у DLX без зависання процесора. |
+
+---
+
 ## 🧪 Як протестувати всі сценарії через Swagger
 
 1. **Запустіть AppHost:**
@@ -105,9 +116,9 @@ PrefetchCount = 5, Manual Ack/Nack)"]
    ```
 2. Відкрийте **Aspire Dashboard** та перейдіть за посиланням на **RabbitMQ Management UI** (`http://localhost:15672`, логін: `guest`, пароль: `guest`).
 3. Відкрийте Swagger `sender-api`:
-   * **Тест Direct:** `POST /api/messages/direct` з `routingKey: "orders.critical"`. Подивіться в логах `Receiver.Worker`, як спрацював `[Critical Consumer]`.
-   * **Тест Fanout:** `POST /api/messages/fanout`. Повідомлення миттєво з'явиться одночасно в обох воркерах `Service A` та `Service B`.
-   * **Тест Topic:** `POST /api/messages/topic` з `topicRoutingKey: "eu.orders.urgent"`. Повідомлення потрапить одразу в дві різні черги: `europe-all-queue` (бо починається на `eu.`) і в `urgent-all-queue` (бо закінчується на `.orders.urgent`)!
-   * **Тест Dead Letter Exchange (DLX):**
-     * `POST /api/messages/dead-letter-test` з `ttlMilliseconds: 3000`. Не чіпайте повідомлення 3 секунди.
-     * Зайдіть у RabbitMQ Management UI: ви побачите, як через 3 секунди таймер TTL протухне, брокер сам викине повідомлення з черги та перенаправить його в `dead-letter-queue`, де його зловить `[DLX DEAD LETTER CONSUMER]`!
+   * **Крок 1 (Direct):** `POST /api/step1-direct/send` з `routingKey: "orders.critical"`. Подивіться в логах `Receiver.Worker`, як спрацював `[Critical Consumer]`.
+   * **Крок 2 (Fanout):** `POST /api/step2-fanout/broadcast`. Повідомлення миттєво з'явиться одночасно в обох чергах `Service A` та `Service B`.
+   * **Крок 3 (Topic):** `POST /api/step3-topic/send` з `topicRoutingKey: "eu.orders.urgent"`. Повідомлення потрапить одразу в дві різні черги: `europe-all-queue` (бо починається на `eu.`) і в `urgent-all-queue` (бо закінчується на `.orders.urgent`)!
+   * **Крок 4 (Dead Letter Exchange та Poison Messages):**
+     * **Тест TTL:** `POST /api/step4-dead-letter/send-with-ttl` з `ttlMilliseconds: 3000`. Через 3 секунди таймер TTL протухне, брокер сам викине повідомлення з черги та перенаправить його в `dead-letter-queue`.
+     * **Тест Poison Message:** `POST /api/step4-dead-letter/send-poison-message`. Воркер зловить повідомлення, виявить маркер `simulate-poison` і викличе `BasicNackAsync(requeue: false)` — повідомлення піде в DLX без зависання системи.
