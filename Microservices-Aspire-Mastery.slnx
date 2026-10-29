@@ -1,43 +1,59 @@
 <Solution>
-  <Folder Name="/01-Custom-MassTransit-And-RabbitMQ/">
-    <Project Path="01-Custom-MassTransit-And-RabbitMQ/Consumer/Consumer.csproj" />
-    <Project Path="01-Custom-MassTransit-And-RabbitMQ/MesBrContracts/MesBrContracts.csproj" />
-    <Project Path="01-Custom-MassTransit-And-RabbitMQ/Producer/Producer.csproj" />
-    <Project Path="01-Custom-MassTransit-And-RabbitMQ/Shared/Shared.csproj" />
+  <Folder Name="/01-Aspire-Fundamentals-And-DbMigrations/">
+    <Project Path="01-Aspire-Fundamentals-And-DbMigrations/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="01-Aspire-Fundamentals-And-DbMigrations/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="01-Aspire-Fundamentals-And-DbMigrations/Catalog.Api/Catalog.Api.csproj" />
+    <Project Path="01-Aspire-Fundamentals-And-DbMigrations/Catalog.DbMigrator/Catalog.DbMigrator.csproj" />
+    <Project Path="01-Aspire-Fundamentals-And-DbMigrations/Client.Web/Client.Web.csproj" />
   </Folder>
-  <Folder Name="/01-Custom-MassTransit-And-RabbitMQ/TConsumer/">
-    <Project Path="01-Custom-MassTransit-And-RabbitMQ/TConsumer/MesBrConsumer.csproj" />
+
+  <Folder Name="/02-Centralized-Caching-Redis/">
+    <Project Path="02-Centralized-Caching-Redis/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="02-Centralized-Caching-Redis/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="02-Centralized-Caching-Redis/Basket.Api/Basket.Api.csproj" />
+    <Project Path="02-Centralized-Caching-Redis/Pricing.Api/Pricing.Api.csproj" />
   </Folder>
-  <Folder Name="/01-Custom-MassTransit-And-RabbitMQ/TProducer/">
-    <Project Path="01-Custom-MassTransit-And-RabbitMQ/TProducer/MesBrProducer.csproj" />
+
+  <Folder Name="/03-RabbitMQ-LowLevel/">
+    <Project Path="03-RabbitMQ-LowLevel/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="03-RabbitMQ-LowLevel/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="03-RabbitMQ-LowLevel/Sender.Api/Sender.Api.csproj" />
+    <Project Path="03-RabbitMQ-LowLevel/Receiver.Worker/Receiver.Worker.csproj" />
   </Folder>
-  <Folder Name="/02-Aspire-Fundamentals-And-Dashboard/">
-    <Project Path="02-Aspire-Fundamentals-And-Dashboard/AspireTemplate.ApiService/AspireTemplate.ApiService.csproj" />
-    <Project Path="02-Aspire-Fundamentals-And-Dashboard/AspireTemplate.AppHost/AspireTemplate.AppHost.csproj" />
-    <Project Path="02-Aspire-Fundamentals-And-Dashboard/AspireTemplate.Common/AspireTemplate.Common.csproj" />
-    <Project Path="02-Aspire-Fundamentals-And-Dashboard/AspireTemplate.ServiceDefaults/AspireTemplate.ServiceDefaults.csproj" />
-    <Project Path="02-Aspire-Fundamentals-And-Dashboard/AspireTemplate.Web/AspireTemplate.Web.csproj" />
+
+  <Folder Name="/04-Event-Driven-MassTransit/">
+    <Project Path="04-Event-Driven-MassTransit/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="04-Event-Driven-MassTransit/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="04-Event-Driven-MassTransit/Contracts/Contracts.csproj" />
+    <Project Path="04-Event-Driven-MassTransit/Order.Api/Order.Api.csproj" />
+    <Project Path="04-Event-Driven-MassTransit/Warehouse.Worker/Warehouse.Worker.csproj" />
   </Folder>
-  <Folder Name="/02-Aspire-Fundamentals-And-Dashboard/AspireTemplate.Components/">
-    <Project Path="02-Aspire-Fundamentals-And-Dashboard/AspireTemplate.Components/RabbitMQConsumers/RabbitMQConsumers.csproj" />
-    <Project Path="02-Aspire-Fundamentals-And-Dashboard/AspireTemplate.Components/Redis.Cache/Redis.Cache.csproj" />
+
+  <Folder Name="/05-Synchronous-Transport-gRPC/">
+    <Project Path="05-Synchronous-Transport-gRPC/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="05-Synchronous-Transport-gRPC/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="05-Synchronous-Transport-gRPC/Inventory.Grpc/Inventory.Grpc.csproj" />
+    <Project Path="05-Synchronous-Transport-gRPC/Order.Client.Api/Order.Client.Api.csproj" />
   </Folder>
-  <Folder Name="/03-Distributed-eShop-Architecture/">
-    <Project Path="03-Distributed-eShop-Architecture/Basket/Basket.csproj" />
-    <Project Path="03-Distributed-eShop-Architecture/Catalog/Catalog.csproj" />
-    <Project Path="03-Distributed-eShop-Architecture/Ordering/Ordering.csproj" />
-    <Project Path="03-Distributed-eShop-Architecture/Shared.Messaging/Shared.Messaging.csproj" />
-    <Project Path="03-Distributed-eShop-Architecture/WebApp/WebApp.csproj" />
-    <Project Path="03-Distributed-eShop-Architecture/YarpApiGateway/YarpApiGateway.csproj" />
+
+  <Folder Name="/06-Observability-And-Centralized-Logging/">
+    <Project Path="06-Observability-And-Centralized-Logging/Observability.Aspire.Demo/Observability.Aspire.Demo.csproj" />
   </Folder>
-  <Folder Name="/03-Distributed-eShop-Architecture/AspireApp/">
-    <Project Path="03-Distributed-eShop-Architecture/AspireApp/AspireApp.AppHost/AspireApp.AppHost.csproj" />
-    <Project Path="03-Distributed-eShop-Architecture/AspireApp/AspireApp.ServiceDefaults/AspireApp.ServiceDefaults.csproj" />
+
+  <Folder Name="/07-Transactional-Patterns-And-Sagas/">
+    <Project Path="07-Transactional-Patterns-And-Sagas/Outbox.Resilience.Demo/Outbox.Resilience.Demo.csproj" />
   </Folder>
-  <Folder Name="/04-Transactional-Outbox-And-Resilience/">
-    <Project Path="04-Transactional-Outbox-And-Resilience/Outbox.Resilience.Demo/Outbox.Resilience.Demo.csproj" />
+
+  <Folder Name="/10-Distributed-eShop-Platform/">
+    <Project Path="10-Distributed-eShop-Platform/Basket/Basket.csproj" />
+    <Project Path="10-Distributed-eShop-Platform/Catalog/Catalog.csproj" />
+    <Project Path="10-Distributed-eShop-Platform/Ordering/Ordering.csproj" />
+    <Project Path="10-Distributed-eShop-Platform/Shared.Messaging/Shared.Messaging.csproj" />
+    <Project Path="10-Distributed-eShop-Platform/WebApp/WebApp.csproj" />
+    <Project Path="10-Distributed-eShop-Platform/YarpApiGateway/YarpApiGateway.csproj" />
   </Folder>
-  <Folder Name="/05-Observability-Tracing-And-Health/">
-    <Project Path="05-Observability-Tracing-And-Health/Observability.Aspire.Demo/Observability.Aspire.Demo.csproj" />
+  <Folder Name="/10-Distributed-eShop-Platform/AspireApp/">
+    <Project Path="10-Distributed-eShop-Platform/AspireApp/AspireApp.AppHost/AspireApp.AppHost.csproj" />
+    <Project Path="10-Distributed-eShop-Platform/AspireApp/AspireApp.ServiceDefaults/AspireApp.ServiceDefaults.csproj" />
   </Folder>
 </Solution>
