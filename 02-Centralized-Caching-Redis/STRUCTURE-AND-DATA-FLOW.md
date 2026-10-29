@@ -22,8 +22,10 @@
 │   └── Aspire.ServiceDefaults.csproj         # Пакетні посилання на спільні компоненти
 │
 ├── Basket.Api/                               # Мікросервіс кошика покупця (Consumer кешу)
-│   ├── Program.cs                            # Minimal API (/api/basket/{userName}), конфігурація HybridCache та L1/L2 TTL
-│   ├── Basket.Api.csproj                     # Aspire.StackExchange.Redis.DistributedCaching, HybridCache
+│   ├── Program.cs                            # Налаштування DI, Controllers, Swagger, конфігурація HybridCache та L1/L2 TTL
+│   ├── Basket.Api.csproj                     # Aspire.StackExchange.Redis.DistributedCaching, HybridCache, лінк на Docs
+│   ├── Controllers/
+│   │   └── BasketController.cs               # ASP.NET Core контролер кошика (GET, POST, DELETE, POST clear-cache)
 │   ├── Models/
 │   │   └── BasketModels.cs                   # Сутності ShoppingCart, ShoppingCartItem, PriceUpdatedEvent, DiscountAppliedEvent
 │   └── Services/
@@ -31,8 +33,12 @@
 │       └── PricingUpdateSubscriber.cs        # Фоновий IHostedService: слухає Redis Pub/Sub 'pricing-channel' та інвалідує кеш
 │
 └── Pricing.Api/                              # Мікросервіс цін та акцій (Producer змін цін)
-    ├── Program.cs                            # Minimal API (/api/pricing/update-price, apply-discount), публікація в Pub/Sub
-    └── Pricing.Api.csproj                    # StackExchange.Redis, Swagger, ServiceDefaults
+    ├── Program.cs                            # Налаштування DI, Controllers, Swagger, підключення Redis Pub/Sub
+    ├── Pricing.Api.csproj                    # StackExchange.Redis, Swagger, ServiceDefaults, лінк на Docs
+    ├── Controllers/
+    │   └── PricingController.cs              # ASP.NET Core контролер (/api/pricing, /update-price, /apply-discount)
+    └── Models/
+        └── PricingModels.cs                  # DTO-моделі запитів зміни цін та промо-знижок
 ```
 
 ---
@@ -81,17 +87,22 @@ classDiagram
         +DateTime LastUpdatedAtUtc
     }
 
-    class BasketApiProgram {
-        +MapGet("/api/basket/{userName}")
-        +MapPost("/api/basket")
-        +MapDelete("/api/basket/{userName}")
-        +MapPost("/api/basket/clear-cache")
+    class BasketController {
+        -HybridCache _cache
+        -BasketStore _store
+        -ILogger _logger
+        +GetBasket(userName) Task~ActionResult~
+        +UpdateBasket(cart) Task~ActionResult~
+        +DeleteBasket(userName) Task~IActionResult~
+        +ClearAllBasketCache() Task~IActionResult~
     }
 
-    class PricingApiProgram {
-        +MapGet("/api/pricing")
-        +MapPost("/api/pricing/update-price")
-        +MapPost("/api/pricing/apply-discount")
+    class PricingController {
+        -IConnectionMultiplexer _redis
+        -ILogger _logger
+        +GetPricingList() IActionResult
+        +UpdatePrice(request) Task~IActionResult~
+        +ApplyDiscount(request) Task~IActionResult~
     }
 
     class RedisMultiplexer {
@@ -100,18 +111,18 @@ classDiagram
     }
 
     AppHost ..> RedisMultiplexer : Запускає Redis контейнер (cache)
-    AppHost ..> BasketApiProgram : Інжектує connectionString 'cache'
-    AppHost ..> PricingApiProgram : Інжектує connectionString 'cache'
+    AppHost ..> BasketController : Інжектує connectionString 'cache'
+    AppHost ..> PricingController : Інжектує connectionString 'cache'
 
-    BasketApiProgram --> HybridCache : Читання/Запис кошиків з L1/L2
-    BasketApiProgram --> BasketStore : Запасне сховище (Backing Store при Cache Miss)
+    BasketController --> HybridCache : Читання/Запис кошиків з L1/L2
+    BasketController --> BasketStore : Запасне сховище (Backing Store при Cache Miss)
     HybridCache --> RedisMultiplexer : Використовує Redis як L2 Distributed Cache
 
     PricingUpdateSubscriber --> RedisMultiplexer : Підписка на 'pricing-channel'
     PricingUpdateSubscriber --> BasketStore : Оновлення цін в об'єктах сховища
     PricingUpdateSubscriber --> HybridCache : Виклик RemoveByTagAsync("baskets")
 
-    PricingApiProgram --> RedisMultiplexer : Публікація PriceUpdatedEvent у 'pricing-channel'
+    PricingController --> RedisMultiplexer : Публікація PriceUpdatedEvent у 'pricing-channel'
     ShoppingCart *-- BasketStore : Зберігається в пам'яті
 ```
 

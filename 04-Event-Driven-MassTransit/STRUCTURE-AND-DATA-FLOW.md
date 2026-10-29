@@ -26,8 +26,12 @@
 │   └── Contracts.csproj                      # Чиста бібліотека класів без зовнішніх залежностей
 │
 ├── Order.Api/                                # Producer подій та клієнт запитів (Order Microservice)
-│   ├── Program.cs                            # Ендпоінти створення замовлень та перевірки наявності через шину
-│   ├── Order.Api.csproj                      # MassTransit.RabbitMQ, Swagger, ServiceDefaults, посилання на Contracts
+│   ├── Program.cs                            # Налаштування DI, Controllers, Swagger, конфігурація MassTransit
+│   ├── Order.Api.csproj                      # MassTransit.RabbitMQ, Swagger, ServiceDefaults, лінк на Docs
+│   ├── Controllers/
+│   │   └── OrdersController.cs               # ASP.NET Core контролер (POST /api/orders, GET /check-stock)
+│   ├── Models/
+│   │   └── OrderModels.cs                    # DTO-моделі замовлень
 │   └── Properties/launchSettings.json        # Профілі запуску
 │
 └── Warehouse.Worker/                         # Подієвий обробник складу (Warehouse Microservice)
@@ -93,13 +97,16 @@ classDiagram
         +Consume(ConsumeContext~Fault~OrderCreatedEvent~~) Task
     }
 
-    class OrderApiProgram {
-        +MapPost("/api/orders")
-        +MapGet("/api/orders/check-stock/{productId}")
+    class OrdersController {
+        -IPublishEndpoint _publishEndpoint
+        -IRequestClient~CheckStockRequest~ _requestClient
+        -ILogger _logger
+        +CreateOrder(request) Task~IActionResult~
+        +CheckStock(productId, quantity) Task~IActionResult~
     }
 
-    OrderApiProgram --> IPublishEndpoint : Публікує OrderCreatedEvent
-    OrderApiProgram --> IRequestClient~CheckStockRequest~ : Відправляє асинхронний запит до складу
+    OrdersController --> IPublishEndpoint : Публікує OrderCreatedEvent
+    OrdersController --> IRequestClient~CheckStockRequest~ : Відправляє асинхронний запит до складу
     
     OrderCreatedConsumer ..|> OrderCreatedEvent : Обробляє подію
     CheckStockConsumer ..|> CheckStockRequest : Отримує запит

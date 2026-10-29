@@ -66,8 +66,8 @@ flowchart TD
 | Проєкт | Стек | Опис |
 | :--- | :--- | :--- |
 | **`Aspire.AppHost`** | .NET Aspire 9.5+ / 10 | Піднімає контейнер Redis з веб-панеллю RedisInsight та реєструє залежності для `Basket.Api` і `Pricing.Api`. |
-| **`Basket.Api`** | Minimal API + `HybridCache` | Сервіс кошика користувача. Зберігає кошик у `HybridCache` і містить фоновий підписник `PricingUpdateSubscriber`, що слухає Redis Pub/Sub канал `pricing-channel`. |
-| **`Pricing.Api`** | Minimal API + `StackExchange.Redis` | Сервіс ціноутворення. Надає методи оновлення цін товарів і промокодів. При кожній зміні транслює подію через Redis Pub/Sub. |
+| **`Basket.Api`** | ASP.NET Core Controllers + `HybridCache` | Сервіс кошика користувача з `BasketController`. Зберігає кошик у `HybridCache` і містить фоновий підписник `PricingUpdateSubscriber`, що слухає Redis Pub/Sub канал `pricing-channel`. |
+| **`Pricing.Api`** | ASP.NET Core Controllers + `StackExchange.Redis` | Сервіс ціноутворення з `PricingController`. Надає методи оновлення цін товарів і промокодів. При кожній зміні транслює подію через Redis Pub/Sub. |
 | **`Aspire.ServiceDefaults`** | Shared Library | Встановлює базові стандарти телеметрії OpenTelemetry, Health Checks та Service Discovery. |
 
 ---

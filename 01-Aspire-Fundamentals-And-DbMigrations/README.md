@@ -24,7 +24,7 @@ flowchart TD
         Migrator["⚙️ Catalog.DbMigrator
 (Накладає схему EF Core + Seeding)"]
         CatalogApi["📦 Catalog.Api
-(Minimal REST API)"]
+(REST API Controllers + Swagger)"]
         ClientWeb["🌐 Client.Web
 (Blazor WebApp)"]
     end

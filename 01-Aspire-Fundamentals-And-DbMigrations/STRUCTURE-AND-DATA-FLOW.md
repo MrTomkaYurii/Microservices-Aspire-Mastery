@@ -26,8 +26,10 @@
 │   └── Catalog.DbMigrator.csproj          # Посилання на Catalog.Api (доступ до DbContext) та Npgsql
 │
 ├── Catalog.Api/                           # Мікросервіс каталогу товарів (REST API)
-│   ├── Program.cs                         # Ендпоінти Minimal API (GET /api/products, POST /api/products)
-│   ├── Catalog.Api.csproj                 # Web SDK, Aspire.Npgsql.EntityFrameworkCore.PostgreSQL, Swagger
+│   ├── Program.cs                         # Налаштування DI, Controllers, Swagger, підключення PostgreSQL
+│   ├── Catalog.Api.csproj                 # Web SDK, Aspire.Npgsql.EntityFrameworkCore.PostgreSQL, Swagger, лінк на Docs
+│   ├── Controllers/
+│   │   └── ProductsController.cs          # ASP.NET Core контролер (GET /api/products, POST /api/products)
 │   └── Data/
 │       └── CatalogDbContext.cs            # EF Core DbContext та сутність Product для PostgreSQL
 │
@@ -83,10 +85,12 @@ classDiagram
         +SeedInitialProducts()
     }
 
-    class CatalogApiProgram {
-        +MapGet("/api/products")
-        +MapGet("/api/products/{id}")
-        +MapPost("/api/products")
+    class ProductsController {
+        -CatalogDbContext _db
+        -ILogger _logger
+        +GetAll() Task~ActionResult~
+        +GetById(id) Task~ActionResult~
+        +Create(product) Task~ActionResult~
     }
 
     class CatalogApiClient {
@@ -101,14 +105,14 @@ classDiagram
     }
 
     AppHost ..> DbMigratorProgram : Запускає першим (WaitFor PostgreSQL)
-    AppHost ..> CatalogApiProgram : Запускає другим (WaitForCompletion Migrator)
+    AppHost ..> ProductsController : Запускає другим (WaitForCompletion Migrator)
     AppHost ..> ProductsRazor : Запускає третім (WaitFor CatalogApi)
 
     CatalogDbContext o-- Product : містить сутності
     DbMigratorProgram --> CatalogDbContext : застосовує міграцію і наповнює даними
-    CatalogApiProgram --> CatalogDbContext : читає/пише товари
+    ProductsController --> CatalogDbContext : читає/пише товари через EF Core
     ProductsRazor --> CatalogApiClient : інжектує для отримання даних
-    CatalogApiClient --> CatalogApiProgram : викликає HTTP GET через Service Discovery
+    CatalogApiClient --> ProductsController : викликає HTTP GET через Service Discovery
 ```
 
 ---

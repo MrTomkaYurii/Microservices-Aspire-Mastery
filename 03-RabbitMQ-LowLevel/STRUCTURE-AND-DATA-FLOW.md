@@ -22,8 +22,12 @@
 │   └── Aspire.ServiceDefaults.csproj         # Пакетні посилання
 │
 ├── Sender.Api/                               # Producer (Відправник повідомлень)
-│   ├── Program.cs                            # Minimal API для надсилання у Direct, Fanout, Topic та DLX черги
-│   ├── Sender.Api.csproj                     # RabbitMQ.Client v7.x, Swagger, ServiceDefaults
+│   ├── Program.cs                            # Налаштування DI, Controllers, Swagger, підключення RabbitMQ v7
+│   ├── Sender.Api.csproj                     # RabbitMQ.Client v7.x, Swagger, ServiceDefaults, лінк на Docs
+│   ├── Controllers/
+│   │   └── MessagesController.cs             # ASP.NET Core контролер (direct, fanout, topic, dead-letter-test)
+│   ├── Models/
+│   │   └── RabbitModels.cs                   # DTO-моделі для різних бірж
 │   └── Properties/launchSettings.json        # Профілі запуску
 │
 └── Receiver.Worker/                          # Consumer (Фоновий обробник)
@@ -60,11 +64,13 @@ classDiagram
         +BasicNackAsync(deliveryTag, multiple, requeue)
     }
 
-    class SenderApiProgram {
-        +MapPost("/api/messages/direct")
-        +MapPost("/api/messages/fanout")
-        +MapPost("/api/messages/topic")
-        +MapPost("/api/messages/dead-letter-test")
+    class MessagesController {
+        -IConnection _connection
+        -ILogger _logger
+        +SendDirectMessage(request) Task~IActionResult~
+        +SendFanoutMessage(request) Task~IActionResult~
+        +SendTopicMessage(request) Task~IActionResult~
+        +SendDeadLetterTest(request) Task~IActionResult~
     }
 
     class RabbitMqConsumerWorker {
@@ -80,8 +86,8 @@ classDiagram
     }
 
     AppHost ..> IConnection : Надає рядок підключення "messaging"
-    SenderApiProgram --> IConnection : Singleton підключення
-    SenderApiProgram ..> IChannel : Створює короткоживучий IChannel на час публікації
+    MessagesController --> IConnection : Singleton підключення
+    MessagesController ..> IChannel : Створює короткоживучий IChannel на час публікації
     RabbitMqConsumerWorker --> IConnection : Singleton підключення
     RabbitMqConsumerWorker ..> IChannel : Створює довгоживучий IChannel для прослуховування черг
     RabbitMqConsumerWorker --> AsyncEventingBasicConsumer : Реєструє асинхронні колбеки обробки

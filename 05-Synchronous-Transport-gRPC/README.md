@@ -56,7 +56,7 @@ flowchart LR
 | Проєкт | Стек | Опис |
 | :--- | :--- | :--- |
 | **`Inventory.Grpc`** | Kestrel + `Grpc.AspNetCore` | gRPC сервер складу. Реалізує контракт `inventory.proto`: `GetProductStock` (наявність), `ReserveStock` (атомарне резервування), `GetStockStream` (потокова видача статусів). |
-| **`Order.Client.Api`** | Minimal API + `Grpc.Net.ClientFactory` | Клієнтський Web API. Впроваджує типізований `InventoryServiceClient`, підключений до сервера через Aspire Service Discovery (`https+http://inventory-grpc`). |
+| **`Order.Client.Api`** | ASP.NET Core Controllers + `Grpc.Net.ClientFactory` | Клієнтський Web API з `OrdersController`. Впроваджує типізований `InventoryServiceClient`, підключений до сервера через Aspire Service Discovery (`https+http://inventory-grpc`). |
 | **`Aspire.AppHost`** | .NET Aspire | Точка входу: оркеструє gRPC сервер та клієнтський API, автоматично налаштовуючи HTTP/2 ендпоінти. |
 | **`Aspire.ServiceDefaults`** | Shared Library | Встановлює базові стандарти метрик і трасування OpenTelemetry. |
 

@@ -29,9 +29,13 @@
 │   └── Services/
 │       └── InventoryGrpcServiceImpl.cs       # Реалізація GetProductStock, ReserveStock, GetStockStream
 │
-└── Order.Client.Api/                         # gRPC Клієнт (Minimal API Gateway)
-    ├── Program.cs                            # Інжекція типізованого gRPC-клієнта через Service Discovery (https+http://inventory-grpc)
-    ├── Order.Client.Api.csproj               # Grpc.Net.ClientFactory, компіляція ProtoRoot GrpcServices="Client"
+└── Order.Client.Api/                         # gRPC Клієнт (REST Gateway з ASP.NET Core Controllers)
+    ├── Program.cs                            # Налаштування DI, Controllers, Swagger, реєстрація AddGrpcClient
+    ├── Order.Client.Api.csproj               # Grpc.Net.ClientFactory, лінк на Docs
+    ├── Controllers/
+    │   └── OrdersController.cs               # ASP.NET Core контролер (check-stock, reserve, stream-stock)
+    ├── Models/
+    │   └── OrderClientModels.cs              # DTO-моделі для викликів контролера
     └── Properties/launchSettings.json        # Профілі запуску
 ```
 
@@ -67,17 +71,19 @@ classDiagram
         +GetStockStream(request) AsyncServerStreamingCall~ProductStockResponse~
     }
 
-    class OrderClientApiProgram {
-        +MapGet("/api/orders/check-stock/{productId}")
-        +MapPost("/api/orders/reserve")
-        +MapPost("/api/orders/stream-stock")
+    class OrdersController {
+        -InventoryServiceClient _client
+        -ILogger _logger
+        +CheckStock(productId) Task~IActionResult~
+        +ReserveStock(request) Task~IActionResult~
+        +StreamStock(request) Task~IActionResult~
     }
 
     AppHost ..> InventoryGrpcServiceImpl : Запускає сервер на динамічному HTTP/2 порті
-    AppHost ..> OrderClientApiProgram : Резолвить адресу "https+http://inventory-grpc"
+    AppHost ..> OrdersController : Резолвить адресу "https+http://inventory-grpc"
     
     InventoryGrpcServiceImpl --|> InventoryServiceBase : Реалізує згенерований C# базовий клас
-    OrderClientApiProgram --> InventoryServiceClient : Використовує згенерований типізований клієнт
+    OrdersController --> InventoryServiceClient : Використовує згенерований типізований клієнт
     InventoryServiceClient ..> InventoryGrpcServiceImpl : Двійковий HTTP/2 зв'язок (Protobuf Wire Format)
 ```
 
