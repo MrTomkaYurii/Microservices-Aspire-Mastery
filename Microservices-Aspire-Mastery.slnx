@@ -51,14 +51,42 @@
   </Folder>
 
   <Folder Name="/06-Observability-And-Centralized-Logging/">
-    <Project Path="06-Observability-And-Centralized-Logging/Observability.Aspire.Demo/Observability.Aspire.Demo.csproj" />
+    <File Path="06-Observability-And-Centralized-Logging/README.md" />
+    <File Path="06-Observability-And-Centralized-Logging/STRUCTURE-AND-DATA-FLOW.md" />
+    <Project Path="06-Observability-And-Centralized-Logging/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="06-Observability-And-Centralized-Logging/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="06-Observability-And-Centralized-Logging/Orders.Api/Orders.Api.csproj" />
   </Folder>
 
   <Folder Name="/07-Transactional-Patterns-And-Sagas/">
-    <Project Path="07-Transactional-Patterns-And-Sagas/Outbox.Resilience.Demo/Outbox.Resilience.Demo.csproj" />
+    <File Path="07-Transactional-Patterns-And-Sagas/README.md" />
+    <File Path="07-Transactional-Patterns-And-Sagas/STRUCTURE-AND-DATA-FLOW.md" />
+    <Project Path="07-Transactional-Patterns-And-Sagas/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="07-Transactional-Patterns-And-Sagas/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="07-Transactional-Patterns-And-Sagas/Checkout.Api/Checkout.Api.csproj" />
+  </Folder>
+
+  <Folder Name="/08-Security-YARP-And-Keycloak/">
+    <File Path="08-Security-YARP-And-Keycloak/README.md" />
+    <File Path="08-Security-YARP-And-Keycloak/STRUCTURE-AND-DATA-FLOW.md" />
+    <Project Path="08-Security-YARP-And-Keycloak/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="08-Security-YARP-And-Keycloak/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="08-Security-YARP-And-Keycloak/YarpGateway/YarpGateway.csproj" />
+    <Project Path="08-Security-YARP-And-Keycloak/Protected.Api/Protected.Api.csproj" />
+  </Folder>
+
+  <Folder Name="/09-Distributed-Testing/">
+    <File Path="09-Distributed-Testing/README.md" />
+    <File Path="09-Distributed-Testing/STRUCTURE-AND-DATA-FLOW.md" />
+    <Project Path="09-Distributed-Testing/Aspire.AppHost/Aspire.AppHost.csproj" />
+    <Project Path="09-Distributed-Testing/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+    <Project Path="09-Distributed-Testing/Sample.Api/Sample.Api.csproj" />
+    <Project Path="09-Distributed-Testing/Tests.ClusterIntegration/Tests.ClusterIntegration.csproj" />
   </Folder>
 
   <Folder Name="/10-Distributed-eShop-Platform/">
+    <File Path="10-Distributed-eShop-Platform/README.md" />
+    <File Path="10-Distributed-eShop-Platform/STRUCTURE-AND-DATA-FLOW.md" />
     <Project Path="10-Distributed-eShop-Platform/Basket/Basket.csproj" />
     <Project Path="10-Distributed-eShop-Platform/Catalog/Catalog.csproj" />
     <Project Path="10-Distributed-eShop-Platform/Ordering/Ordering.csproj" />
