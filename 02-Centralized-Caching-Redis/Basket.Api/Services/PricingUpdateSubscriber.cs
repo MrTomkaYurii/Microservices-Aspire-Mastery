@@ -35,6 +35,18 @@ public class PricingUpdateSubscriber : BackgroundService
 
         _logger.LogInformation("📡 [PricingUpdateSubscriber] Підписка на Redis Pub/Sub канал 'pricing-channel' оформлена.");
 
+        // =========================================================================
+        // КРИТИЧНА ТОЧКА: Міжсервісна інвалідація кешу через Redis Pub/Sub
+        // -------------------------------------------------------------------------
+        // Коли сервіс Pricing.Api змінює ціну на товар або оголошує знижку,
+        // екземпляри Basket.Api нічого про це не знають, і клієнти продовжували б бачити
+        // застарілі ціни (Stale Data) з кешу.
+        // Завдяки оформленню підписки на спільний канал 'pricing-channel':
+        // 1. Подія публікується в Redis один раз (Fanout Pub/Sub).
+        // 2. ВСІ запущені репліки Basket.Api миттєво отримують це повідомлення.
+        // 3. Виклик _cache.RemoveByTagAsync("baskets") одночасно скидає як швидкий локальний
+        //    L1 кеш у пам'яті процесу, так і записи у розподіленому L2 Redis.
+        // =========================================================================
         await subscriber.SubscribeAsync(RedisChannel.Literal("pricing-channel"), async (channel, message) =>
         {
             var rawText = message.ToString();

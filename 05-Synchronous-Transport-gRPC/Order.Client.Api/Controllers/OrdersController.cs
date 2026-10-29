@@ -35,6 +35,16 @@ public class OrdersController : ControllerBase
         var sw = Stopwatch.StartNew();
         _logger.LogInformation("📞 [Order.Client] Виклик gRPC GetProductStock для {ProductId}...", productId);
 
+        // =========================================================================
+        // КРИТИЧНА ТОЧКА 1: Високопродуктивний Unary виклик через HTTP/2
+        // -------------------------------------------------------------------------
+        // 1. Компактність: Protobuf кодує корисне навантаження у двійковий вигляд
+        //    (замість текстових ключів JSON передаються однобайтові теги полів).
+        // 2. Мультиплексування: клієнт gRPC повторно використовує ОДНЕ постійне
+        //    TCP-з'єднання HTTP/2 для паралельних запитів без витрат на повторні рукостискання.
+        // 3. Aspire Service Discovery ("https+http://inventory-grpc") динамічно транслює
+        //    віртуальне ім'я у реальний порт сервера Kestrel.
+        // =========================================================================
         var response = await _client.GetProductStockAsync(new ProductStockRequest
         {
             ProductId = productId
@@ -113,7 +123,14 @@ public class OrdersController : ControllerBase
         using var call = _client.GetStockStream(streamRequest);
         var results = new List<object>();
 
-        // Асинхронно зчитуємо кожен елемент із вхідного gRPC-стріму
+        // =========================================================================
+        // КРИТИЧНА ТОЧКА 2: Server Streaming (Асинхронне читання потоку частинами)
+        // -------------------------------------------------------------------------
+        // Сервер повертає елементи послідовно через один постійний потік HTTP/2.
+        // Клієнт зчитує кожен надісланий фрейм даних у міру його надходження
+        // через 'await foreach (var item in call.ResponseStream.ReadAllAsync())',
+        // не чекаючи формування всього підсумкового списку у пам'яті сервера.
+        // =========================================================================
         await foreach (var item in call.ResponseStream.ReadAllAsync())
         {
             _logger.LogInformation("📥 [Stream Chunk] Отримано: {Product} (Наявно: {Stock})", item.ProductName, item.AvailableQuantity);

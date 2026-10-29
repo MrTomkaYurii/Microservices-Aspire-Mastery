@@ -32,7 +32,16 @@ public class MessagesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> SendDirectMessage([FromBody] DirectMessageRequest request)
     {
-        // У RabbitMQ v7 канали створюються асинхронно через CreateChannelAsync
+        // =========================================================================
+        // КРИТИЧНА ТОЧКА 1: IConnection vs IChannel у RabbitMQ
+        // -------------------------------------------------------------------------
+        // 1. IConnection — важке довгоживуче TCP-з'єднання (Singleton).
+        // 2. IChannel — легковаговий потік усередині TCP (мультиплексування).
+        // ВАЖЛИВО: IChannel НЕ Є ПОТОКОБЕЗПЕЧНИМ! Його категорично НЕ МОЖНА шарити між
+        // паралельними HTTP-запитами, інакше виникне пошкодження бінарних AMQP-фреймів.
+        // Завжди використовуйте локальний життєвий цикл:
+        // 'await using var channel = await _connection.CreateChannelAsync()'.
+        // =========================================================================
         await using var channel = await _connection.CreateChannelAsync();
 
         // Оголошуємо Direct Exchange (durable = true)
@@ -50,10 +59,18 @@ public class MessagesController : ControllerBase
         });
         var body = Encoding.UTF8.GetBytes(payload);
 
+        // =========================================================================
+        // КРИТИЧНА ТОЧКА 2: Надійність збереження повідомлення (Message Durability)
+        // -------------------------------------------------------------------------
+        // Щоб повідомлення не було втрачено при аварійному вимкненні сервера чи брокера:
+        // 1. Біржа (Exchange) оголошується як durable: true.
+        // 2. Черга (Queue) оголошується як durable: true.
+        // 3. Повідомлення публікується з DeliveryMode = DeliveryModes.Persistent (запис на диск).
+        // =========================================================================
         var props = new BasicProperties
         {
             ContentType = "application/json",
-            DeliveryMode = DeliveryModes.Persistent, // Зберігати на диск у разі збою брокера
+            DeliveryMode = DeliveryModes.Persistent,
             MessageId = request.MessageId.ToString(),
             Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
         };

@@ -56,7 +56,14 @@ public class OrdersController : ControllerBase
             request.Quantity,
             DateTime.UtcNow);
 
-        // Публікація в шину MassTransit (Fanout / Topic exchange)
+        // =========================================================================
+        // КРИТИЧНА ТОЧКА 1: Патерн Publish/Subscribe vs Point-to-Point Send
+        // -------------------------------------------------------------------------
+        // Метод _publishEndpoint.Publish<T>() публікує подію у Fanout-біржу за типом контракту
+        // ('Contracts:OrderCreatedEvent'). Видавець (Order.Api) повністю розв'язаний з одержувачами:
+        // він НЕ знає, скільки сервісів (Склад, Оплата, Нотифікації, CRM) підписано на цю подію.
+        // Будь-який новий підписник може підключитися пізніше без модифікації коду Order.Api.
+        // =========================================================================
         await _publishEndpoint.Publish(orderEvent, cancellationToken);
 
         _logger.LogInformation("🚀 [Order.Api] Опубліковано подію OrderCreatedEvent для замовлення {OrderId} (Клієнт: {Customer})",
@@ -86,7 +93,15 @@ public class OrdersController : ControllerBase
     {
         _logger.LogInformation("🔍 [Order.Api] Відправка CheckStockRequest для товару {ProductId} через шину...", productId);
 
-        // Відправляємо запит через шину і очікуємо один із двох типів відповідей
+        // =========================================================================
+        // КРИТИЧНА ТОЧКА 2: Асинхронний діалог Request/Response через шину без блокування HTTP
+        // -------------------------------------------------------------------------
+        // IRequestClient<CheckStockRequest> відправляє повідомлення у чергу складу.
+        // MassTransit автоматично створює тимчасову чергу відповідей (ReplyTo) та генерує
+        // унікальний CorrelationId для кореляції запиту й відповіді.
+        // HTTP-потік веб-сервера Kestrel залишається повністю вільним (не блокується очікуванням).
+        // Кортеж (available, unavailable) дозволяє надійно обробити поліморфний результат.
+        // =========================================================================
         var (available, unavailable) = await _requestClient.GetResponse<StockAvailableResponse, StockUnavailableResponse>(
             new CheckStockRequest(productId, quantity), cancellationToken);
 
