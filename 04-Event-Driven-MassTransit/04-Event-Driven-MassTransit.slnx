@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Aspire.AppHost/Aspire.AppHost.csproj" />
+  <Project Path="Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" />
+  <Project Path="Contracts/Contracts.csproj" />
+  <Project Path="Order.Api/Order.Api.csproj" />
+  <Project Path="Warehouse.Worker/Warehouse.Worker.csproj" />
+</Solution>
