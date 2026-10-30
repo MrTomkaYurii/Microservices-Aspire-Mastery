@@ -77,9 +77,13 @@ public class RabbitMqConsumerWorker : BackgroundService
 
         await _channel.QueueDeclareAsync("orders-critical-queue", durable: true, exclusive: false, autoDelete: false, cancellationToken: stoppingToken);
         await _channel.QueueBindAsync("orders-critical-queue", "direct-exchange", "orders.critical", cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync("orders-critical-queue", "direct-exchange", "orders-critical-queue", cancellationToken: stoppingToken);
 
         await _channel.QueueDeclareAsync("orders-regular-queue", durable: true, exclusive: false, autoDelete: false, cancellationToken: stoppingToken);
         await _channel.QueueBindAsync("orders-regular-queue", "direct-exchange", "orders.regular", cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync("orders-regular-queue", "direct-exchange", "orders-regular-queue", cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync("orders-regular-queue", "direct-exchange", "string", cancellationToken: stoppingToken);
+        await _channel.QueueBindAsync("orders-regular-queue", "direct-exchange", string.Empty, cancellationToken: stoppingToken);
 
         // ---------------------------------------------------------------------
         // 2. НАЛАШТУВАННЯ FANOUT EXCHANGE ТА ЧЕРГ

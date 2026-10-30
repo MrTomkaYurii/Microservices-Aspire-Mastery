@@ -66,7 +66,7 @@ public class Step3_TopicExchangeController : ControllerBase
             durable: true,
             autoDelete: false);
 
-        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
+        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonDefaults.Options));
 
         var props = new BasicProperties
         {

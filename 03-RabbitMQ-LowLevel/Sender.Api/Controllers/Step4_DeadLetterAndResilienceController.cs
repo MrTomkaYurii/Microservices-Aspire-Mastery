@@ -78,7 +78,7 @@ public class Step4_DeadLetterAndResilienceController : ControllerBase
             autoDelete: false,
             arguments: queueArgs);
 
-        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request));
+        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(request, JsonDefaults.Options));
 
         // Встановлюємо заголовок Expiration (TTL у мілісекундах)
         var props = new BasicProperties
@@ -125,7 +125,7 @@ public class Step4_DeadLetterAndResilienceController : ControllerBase
             OrderId = Guid.NewGuid(),
             Action = "simulate-poison",
             Description = "Це повідомлення навмисно містить помилку для демонстрації BasicNack(requeue: false)."
-        });
+        }, JsonDefaults.Options);
         var body = Encoding.UTF8.GetBytes(poisonPayload);
 
         var props = new BasicProperties
