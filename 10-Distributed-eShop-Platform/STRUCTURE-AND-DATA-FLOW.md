@@ -64,6 +64,18 @@ flowchart TD
 
 ---
 
+## 🧭 REST API Контролери та Swagger UI сервісів
+
+Усі мікросервіси переведено з Minimal API на класичні типізовані `[ApiController]` контролери з повною підтримкою Swagger UI у корені сервісу (`c.RoutePrefix = string.Empty`):
+
+| Сервіс | Контролер | Основні Endpoints | Swagger UI |
+| :--- | :--- | :--- | :--- |
+| **Catalog** | `ProductsController` | `GET /api/products`, `GET /api/products/{id}`, `POST /api/products`, `PUT /api/products/{id}`, `DELETE /api/products/{id}`, `GET /api/products/search/{query}` | `http://localhost:<catalog-port>/` |
+| **Basket** | `BasketController` | `GET /api/basket/{userName}`, `POST /api/basket`, `POST /api/basket/checkout`, `DELETE /api/basket/{userName}` | `http://localhost:<basket-port>/` |
+| **Ordering** | `OrdersController` | `GET /orders`, `GET /orders/{userName}`, `POST /orders`, `GET /api/orders` | `http://localhost:<ordering-port>/` |
+
+---
+
 ## 🚀 Запуск платформи eShop
 
 ```powershell

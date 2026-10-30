@@ -17,4 +17,15 @@
     <ProjectReference Include="..\Aspire.ServiceDefaults\Aspire.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+    <Folder Include="Diagnostics\" />
+    <Folder Include="Health\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Link="Docs\README.md" />
+    <None Include="..\STRUCTURE-AND-DATA-FLOW.md" Link="Docs\STRUCTURE-AND-DATA-FLOW.md" />
+  </ItemGroup>
+
 </Project>

@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Controllers\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\README.md" Link="Docs\README.md" />
     <None Include="..\STRUCTURE-AND-DATA-FLOW.md" Link="Docs\STRUCTURE-AND-DATA-FLOW.md" />
   </ItemGroup>

@@ -40,8 +40,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Catalog API v1");
-        c.RoutePrefix = "swagger";
+        c.RoutePrefix = string.Empty; // Swagger доступний одразу в корені
     });
+
+    app.MapGet("/swagger", () => Results.Redirect("/"));
 }
 
 app.UseHttpsRedirection();

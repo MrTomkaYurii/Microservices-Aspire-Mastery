@@ -9,21 +9,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // =========================================================================
-// 2. Налаштування MassTransit з RabbitMQ
+// 2. Налаштування шини MassTransit через брокер RabbitMQ
 // =========================================================================
 builder.Services.AddMassTransit(x =>
 {
-    // Реєструємо клієнт для патерну Request/Response
-    x.AddRequestClient<CheckStockRequest>();
+    x.SetKebabCaseEndpointNameFormatter();
 
     x.UsingRabbitMq((context, cfg) =>
     {
         var config = context.GetRequiredService<IConfiguration>();
-        var connString = config.GetConnectionString("messaging");
+        var connectionString = config.GetConnectionString("eventbus") ?? "amqp://guest:guest@localhost:5672";
+        cfg.Host(new Uri(connectionString));
 
-        cfg.Host(connString ?? "amqp://guest:guest@localhost:5672");
+        cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
+
         cfg.ConfigureEndpoints(context);
     });
+
+    x.AddRequestClient<CheckStockRequest>();
 });
 
 // =========================================================================
@@ -35,9 +38,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
     {
-        Title = "Order API - MassTransit Event-Driven Architecture",
+        Title = "Order Service API (MassTransit Pub/Sub & Request/Response)",
         Version = "v1",
-        Description = "Мікросервіс замовлень з контролерами ASP.NET Core, що публікує події та надсилає запити у шину MassTransit."
+        Description = "Сервіс управління замовленнями з демонстрацією асинхронних патернів MassTransit: Pub/Sub подій та синхронного Request/Response."
     });
 });
 
@@ -51,8 +54,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Order API v1");
-        c.RoutePrefix = "swagger";
+        c.RoutePrefix = string.Empty; // Swagger доступний у корені
     });
+
+    app.MapGet("/swagger", () => Results.Redirect("/"));
 }
 
 app.UseHttpsRedirection();

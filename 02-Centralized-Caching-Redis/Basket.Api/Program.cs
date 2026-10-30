@@ -5,32 +5,32 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 // =========================================================================
-// 1. Aspire Service Defaults (Телеметрія OpenTelemetry, HealthChecks, ServiceDiscovery)
+// 1. Aspire Service Defaults (Телеметрія, HealthChecks, ServiceDiscovery)
 // =========================================================================
 builder.AddServiceDefaults();
 
 // =========================================================================
-// 2. КРОК 1: Локальний кеш у пам'яті процесу (IMemoryCache)
-//    Реєструємо стандартний провайдер оперативної пам'яті ASP.NET Core
+// 2. КРОК 1: Локальний In-Memory кеш (RAM поточного процесу)
+//    Найпростіший, мікросекундна швидкість, але не синхронізується між копіями.
 // =========================================================================
 builder.Services.AddMemoryCache();
 
 // =========================================================================
 // 3. КРОК 2: Чистий розподілений кеш Redis (IDistributedCache)
-//    Aspire автоматично налаштовує підключення до Redis-контейнера "cache"
+//    Спільний для всіх інстансів, але має накладні витрати на TCP та JSON серіалізацію.
 // =========================================================================
 builder.AddRedisDistributedCache("cache");
 
 // =========================================================================
-// 4. КРОК 3: Сучасний .NET 10 HybridCache (Дворівневий: L1 RAM + L2 Redis)
-//    Поєднує швидкість локальної пам'яті із захистом від Cache Stampede
+// 4. КРОК 3: Новий HybridCache у .NET 10 (L1 RAM + L2 Redis)
+//    Автоматичний захист від Cache Stampede (блокування фабрики) + теги інвалідації.
 // =========================================================================
 builder.Services.AddHybridCache(options =>
 {
     options.DefaultEntryOptions = new HybridCacheEntryOptions
     {
-        Expiration = TimeSpan.FromMinutes(10),          // Час життя у Redis (L2)
-        LocalCacheExpiration = TimeSpan.FromMinutes(2)  // Час життя у локальній пам'яті (L1)
+        Expiration = TimeSpan.FromMinutes(10),
+        LocalCacheExpiration = TimeSpan.FromMinutes(2)
     };
 });
 
@@ -75,8 +75,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Caching Masterclass v1");
-        c.RoutePrefix = "swagger";
+        c.RoutePrefix = string.Empty; // Swagger доступний одразу в корені
     });
+
+    app.MapGet("/swagger", () => Results.Redirect("/"));
 }
 
 app.UseHttpsRedirection();

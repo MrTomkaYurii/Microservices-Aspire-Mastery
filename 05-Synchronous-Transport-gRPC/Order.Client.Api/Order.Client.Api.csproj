@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.Net.ClientFactory" Version="2.67.0" />
-    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Google.Protobuf" Version="3.30.0" />
     <PackageReference Include="Grpc.Tools" Version="2.69.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -22,7 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\Inventory.Grpc\Protos\inventory.proto" GrpcServices="Client" />
+    <Protobuf Include="..\Inventory.Grpc\Protos\inventory.proto" GrpcServices="Client" Link="Protos\inventory.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
   <ItemGroup>

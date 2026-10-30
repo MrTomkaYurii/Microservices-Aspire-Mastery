@@ -75,11 +75,39 @@ builder.Services.AddSingleton<IConnection>(sp =>
 builder.Services.AddMassTransitWithAssemblies(Assembly.GetExecutingAssembly());
 builder.Services.AddHostedService<OutboxProcessor>();
 
+// 6. Контролери та Swagger UI
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Basket API - eShop Platform (.NET 10)",
+        Version = "v1",
+        Description = "Сервіс кошика покупок eShop з Redis HybridCache, PostgreSQL та Outbox Processor."
+    });
+});
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Basket API v1");
+        c.RoutePrefix = string.Empty;
+    });
+
+    app.MapGet("/swagger", () => Results.Redirect("/"));
+}
+
 app.UseHttpsRedirection();
 app.UseMigration();
-app.MapBasketEndpoints();
+
+app.MapControllers();
+app.MapBasketEndpoints(); // Збережено для сумісності
 
 app.Run();

@@ -16,4 +16,14 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+    <Folder Include="Models\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Link="Docs\README.md" />
+    <None Include="..\STRUCTURE-AND-DATA-FLOW.md" Link="Docs\STRUCTURE-AND-DATA-FLOW.md" />
+  </ItemGroup>
+
 </Project>

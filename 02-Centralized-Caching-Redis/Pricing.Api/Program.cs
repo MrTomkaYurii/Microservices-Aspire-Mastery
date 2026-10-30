@@ -42,8 +42,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Pricing API v1");
-        c.RoutePrefix = "swagger";
+        c.RoutePrefix = string.Empty; // Swagger доступний у корені http://localhost:порт/
     });
+
+    app.MapGet("/swagger", () => Results.Redirect("/"));
 }
 
 app.UseHttpsRedirection();

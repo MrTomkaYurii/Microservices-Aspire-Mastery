@@ -8,12 +8,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // =========================================================================
-// 2. Реєстрація типізованого gRPC клієнта з Aspire Service Discovery
-//    "https+http://inventory-grpc" автоматично транслюється у реальний порт сервера!
+// 2. Реєстрація gRPC клієнта з Aspire Service Discovery
+//    Зверніть увагу: ми використовуємо логічне ім'я "inventory-grpc",
+//    яке Aspire автоматично резолвить у реальний endpoint (HTTP/2) без хардкоду портів!
 // =========================================================================
 builder.Services.AddGrpcClient<InventoryService.InventoryServiceClient>(o =>
 {
-    o.Address = new Uri("https+http://inventory-grpc");
+    o.Address = new("https+http://inventory-grpc");
 });
 
 // =========================================================================
@@ -25,9 +26,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
     {
-        Title = "Order Client API - Synchronous gRPC Transport",
+        Title = "Order Service API (gRPC Client vs REST)",
         Version = "v1",
-        Description = "API-шлюз з повноцінними контролерами ASP.NET Core, що викликає gRPC сервер (Unary + Server Streaming) через Aspire Service Discovery."
+        Description = "Клієнтський мікросервіс замовлень, який взаємодіє з Inventory Service через високопродуктивний бінарний gRPC зв'язок на основі Service Discovery."
     });
 });
 
@@ -41,8 +42,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Order Client API v1");
-        c.RoutePrefix = "swagger";
+        c.RoutePrefix = string.Empty; // Swagger доступний у корені
     });
+
+    app.MapGet("/swagger", () => Results.Redirect("/"));
 }
 
 app.UseHttpsRedirection();
