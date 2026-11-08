@@ -14,7 +14,9 @@ builder.AddServiceDefaults();
 builder.Services.AddSingleton<IConnectionFactory>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
-    var connectionString = config.GetConnectionString("eventbus") ?? "amqp://guest:guest@localhost:5672";
+    var connectionString = config.GetConnectionString("messaging")
+        ?? config.GetConnectionString("eventbus")
+        ?? "amqp://guest:guest@localhost:5672";
     return new ConnectionFactory
     {
         Uri = new Uri(connectionString),
@@ -23,10 +25,23 @@ builder.Services.AddSingleton<IConnectionFactory>(sp =>
     };
 });
 
-// Довгоживуче з'єднання (IConnection)
+// Довгоживуче з'єднання (IConnection) з надійною спробою повторного підключення
 builder.Services.AddSingleton<IConnection>(sp =>
 {
     var factory = sp.GetRequiredService<IConnectionFactory>();
+    var logger = sp.GetRequiredService<ILogger<IConnection>>();
+    for (int attempt = 1; attempt <= 10; attempt++)
+    {
+        try
+        {
+            return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex) when (attempt < 10)
+        {
+            logger.LogWarning("RabbitMQ connection attempt {Attempt} failed ({Message}). Retrying in 2s...", attempt, ex.Message);
+            Thread.Sleep(2000);
+        }
+    }
     return factory.CreateConnectionAsync().GetAwaiter().GetResult();
 });
 
@@ -49,17 +64,15 @@ var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-if (app.Environment.IsDevelopment())
+// Забезпечуємо доступність Swagger UI завжди (і в корені '/', і на '/swagger')
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "RabbitMQ Low-Level API v1");
-        c.RoutePrefix = string.Empty; // Swagger доступний у корені
-    });
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "RabbitMQ Low-Level API v1");
+    c.RoutePrefix = string.Empty; // Swagger доступний у корені
+});
 
-    app.MapGet("/swagger", () => Results.Redirect("/"));
-}
+app.MapGet("/swagger", () => Results.Redirect("/"));
 
 app.UseHttpsRedirection();
 app.MapControllers();

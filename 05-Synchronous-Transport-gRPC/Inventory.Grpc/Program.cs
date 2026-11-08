@@ -8,17 +8,39 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // =========================================================================
-// 2. Реєстрація gRPC сервера
+// 2. Реєстрація gRPC сервера та діагностичного Swagger UI
 // =========================================================================
 builder.Services.AddGrpc();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new()
+    {
+        Title = "Inventory.Grpc Server Diagnostics (.NET 10 & HTTP/2)",
+        Version = "v1",
+        Description = "Діагностичний інтерфейс gRPC-сервера складу. Основні бінарні виклики (Unary та Server Streaming) приймаються по HTTP/2 через InventoryGrpcServiceImpl."
+    });
+});
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-// Реєструємо сервіс gRPC
-app.MapGrpcService<InventoryGrpcServiceImpl>();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Inventory.Grpc Diagnostics v1");
+        c.RoutePrefix = string.Empty; // Swagger відкривається одразу в корені
+    });
 
-app.MapGet("/", () => "Inventory.Grpc Server (.NET 10 & HTTP/2). Використовуйте gRPC клієнт для виклику сервісу.");
+    app.MapGet("/swagger", () => Results.Redirect("/"));
+}
+
+// Реєструємо бінарний сервіс gRPC та діагностичні контролери
+app.MapGrpcService<InventoryGrpcServiceImpl>();
+app.MapControllers();
 
 app.Run();

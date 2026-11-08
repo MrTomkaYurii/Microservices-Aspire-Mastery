@@ -14,7 +14,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
 
 // =========================================================================
-// 2. Підключення до RabbitMQ v7
+// 2. Підключення до RabbitMQ v7 з надійною спробою повторного підключення
 // =========================================================================
 builder.Services.AddSingleton<IConnection>(sp =>
 {
@@ -27,6 +27,20 @@ builder.Services.AddSingleton<IConnection>(sp =>
         AutomaticRecoveryEnabled = true,
         NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
     };
+
+    var logger = sp.GetRequiredService<ILogger<IConnection>>();
+    for (int attempt = 1; attempt <= 10; attempt++)
+    {
+        try
+        {
+            return factory.CreateConnectionAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex) when (attempt < 10)
+        {
+            logger.LogWarning("RabbitMQ connection attempt {Attempt} failed ({Message}). Retrying in 2s...", attempt, ex.Message);
+            Thread.Sleep(2000);
+        }
+    }
 
     return factory.CreateConnectionAsync().GetAwaiter().GetResult();
 });

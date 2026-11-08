@@ -9,7 +9,7 @@ public class InventoryGrpcServiceImpl : InventoryService.InventoryServiceBase
     private readonly ILogger<InventoryGrpcServiceImpl> _logger;
 
     // Імітація бази даних складу товарів
-    private static readonly ConcurrentDictionary<string, (string Name, int Stock, double Price)> Storage = new()
+    internal static readonly ConcurrentDictionary<string, (string Name, int Stock, double Price)> Storage = new()
     {
         ["11111111-1111-1111-1111-111111111111"] = ("Смарт-годинник Pro Pulse", 50, 199.99),
         ["22222222-2222-2222-2222-222222222222"] = ("Бездротова миша UltraGlide 4K", 12, 79.99),

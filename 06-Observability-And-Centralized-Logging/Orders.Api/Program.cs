@@ -53,6 +53,8 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Orders.Api v1");
         c.RoutePrefix = string.Empty; // Swagger доступний у корені http://localhost:порт/
     });
+
+    app.MapGet("/swagger", () => Results.Redirect("/"));
 }
 
 app.UseAuthorization();

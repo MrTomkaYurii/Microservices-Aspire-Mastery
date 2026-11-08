@@ -14,13 +14,9 @@
 
 ```mermaid
 flowchart LR
-    Step1["Крок 1: IMemoryCache
-(Локальна RAM процесу)"] --> Step2["Крок 2: IDistributedCache
-(Спільний Redis)"]
-    Step2 --> Step3["Крок 3: HybridCache
-(L1 RAM + L2 Redis + Stampede Guard)"]
-    Step3 --> Step4["Крок 4: Redis Pub/Sub
-(Синхронізація між мікросервісами)"]
+    Step1["Крок 1: IMemoryCache<br/>(Локальна RAM процесу)"] --> Step2["Крок 2: IDistributedCache<br/>(Спільний Redis)"]
+    Step2 --> Step3["Крок 3: HybridCache<br/>(L1 RAM + L2 Redis + Stampede Guard)"]
+    Step3 --> Step4["Крок 4: Redis Pub/Sub<br/>(Синхронізація між мікросервісами)"]
 ```
 
 ---
@@ -74,8 +70,8 @@ classDiagram
     class AppHost {
         +AddRedis("cache")
         +WithRedisInsight()
-        +AddProject<Basket_Api>()
-        +AddProject<Pricing_Api>()
+        +AddProject~Basket_Api~()
+        +AddProject~Pricing_Api~()
     }
 
     class Step1_InMemoryCacheController {
@@ -195,7 +191,7 @@ sequenceDiagram
     API->>Redis: 1. GetStringAsync("distributed:basket:john") через TCP
     alt Запис знайдено в Redis (Cache HIT)
         Redis-->>API: JSON-рядок (~1.5 ms)
-        API->>API: JsonSerializer.Deserialize<ShoppingCart>(json)
+        API->>API: JsonSerializer.Deserialize ShoppingCart
         API-->>Client: 200 OK (DataSource: Redis Distributed Cache)
     else Запису немає (Cache MISS)
         API->>DB: 2. store.GetAsync("john")
@@ -293,7 +289,7 @@ sequenceDiagram
 #### ❓ Чому саме Redis Pub/Sub, а не звичайний HTTP POST?
 Якщо в продакшені `Basket.Api` запущений у **5 репліках** за балансувальником навантаження (Nginx, Kubernetes Ingress):
 * Звичайний HTTP-запит від `Pricing.Api` потрапить лише на **одну випадкову репліку**. Інші 4 репліки залишаться зі старим кешем і продаватимуть товар за неправильною ціною!
-* Через `Redis Pub/Sub` сигнал отримують **ВСІ 5 реплік одночасно**.
+* Через `Redis Pub/Sub` сигнал отримують **ВСІ 5 репліки одночасно**.
 
 ---
 

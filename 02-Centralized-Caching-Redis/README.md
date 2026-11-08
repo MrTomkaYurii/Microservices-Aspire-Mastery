@@ -11,39 +11,32 @@
 ```mermaid
 flowchart TD
     subgraph Step1 ["📘 Крок 1: Локальний IMemoryCache"]
-        C1["Step1_InMemoryCacheController
-(/api/step1-in-memory)"]
+        C1["Step1_InMemoryCacheController<br/>(/api/step1-in-memory)"]
         RAM["RAM процесу (Найшвидший ~0.005ms)"]
         C1 --- RAM
     end
 
     subgraph Step2 ["📘 Крок 2: Розподілений Redis"]
-        C2["Step2_DistributedRedisCacheController
-(/api/step2-distributed-redis)"]
-        RedisServer[("🔴 Спільний Redis Docker
-(Спільний для всіх реплік ~1.5ms)")]
+        C2["Step2_DistributedRedisCacheController<br/>(/api/step2-distributed-redis)"]
+        RedisServer[("🔴 Спільний Redis Docker<br/>(Спільний для всіх реплік ~1.5ms)")]
         C2 --- RedisServer
     end
 
     subgraph Step3 ["📘 Крок 3: Гібридний HybridCache"]
-        C3["Step3_HybridCacheController
-(/api/step3-hybrid)"]
+        C3["Step3_HybridCacheController<br/>(/api/step3-hybrid)"]
         Hybrid["L1 (RAM) + L2 (Redis) + Захист від Stampede"]
         C3 --- Hybrid
     end
 
     subgraph Step4 ["📘 Крок 4: Синхронізація між мікросервісами"]
-        PricingApi["🏷️ Pricing.Api
-(Змінює ціни)"]
+        PricingApi["🏷️ Pricing.Api<br/>(Змінює ціни)"]
         PubSub["📻 Redis Pub/Sub ('pricing-channel')"]
-        Subscriber["PricingUpdateSubscriber
-(Слухач у Basket.Api)"]
-        C4["Step4_CrossServiceCacheSyncController
-(/api/step4-cross-service-sync)"]
+        Subscriber["PricingUpdateSubscriber<br/>(Слухач у Basket.Api)"]
+        C4["Step4_CrossServiceCacheSyncController<br/>(/api/step4-cross-service-sync)"]
         
-        PricingApi -->|sub.PublishAsync| PubSub
-        PubSub -->|subscriber.SubscribeAsync| Subscriber
-        Subscriber -->|Очищує кеш кошиків| C4
+        PricingApi -->|"sub.PublishAsync"| PubSub
+        PubSub -->|"subscriber.SubscribeAsync"| Subscriber
+        Subscriber -->|"Очищує кеш кошиків"| C4
     end
 
     Step1 --> Step2 --> Step3 --> Step4

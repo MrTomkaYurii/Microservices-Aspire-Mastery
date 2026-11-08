@@ -2,13 +2,14 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 // =========================================================================
 // 1. Брокер повідомлень: RabbitMQ з плагіном Management
-//    Запускається в контейнері з персистентним томом і веб-панеллю управління
+//    Запускається в контейнері з персистентним томом і веб-панеллю управління (порт 15672)
 // =========================================================================
 var username = builder.AddParameter("username", "guest", secret: true);
 var password = builder.AddParameter("password", "guest", secret: true);
 
 var rabbitmq = builder.AddRabbitMQ("messaging", username, password, port: 5672)
-    .WithManagementPlugin()
+    .WithManagementPlugin(port: 15672)
+    .WithUrlForEndpoint("management", ep => new() { Url = ep.Url, DisplayText = "RabbitMQ Management UI" })
     .WithDataVolume()
     .WithLifetime(ContainerLifetime.Persistent);
 
@@ -18,6 +19,7 @@ var rabbitmq = builder.AddRabbitMQ("messaging", username, password, port: 5672)
 //    та публікації повідомлень з TTL / Dead-Letter routing.
 // =========================================================================
 var sender = builder.AddProject<Projects.Sender_Api>("sender-api")
+    .WithExternalHttpEndpoints()
     .WithReference(rabbitmq)
     .WaitFor(rabbitmq);
 

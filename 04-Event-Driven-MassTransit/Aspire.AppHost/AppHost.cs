@@ -7,7 +7,8 @@ var username = builder.AddParameter("username", "guest", secret: true);
 var password = builder.AddParameter("password", "guest", secret: true);
 
 var rabbitmq = builder.AddRabbitMQ("messaging", username, password, port: 5672)
-    .WithManagementPlugin()
+    .WithManagementPlugin(port: 15672)
+    .WithUrlForEndpoint("management", ep => new() { Url = ep.Url, DisplayText = "RabbitMQ Management UI" })
     .WithDataVolume()
     .WithLifetime(ContainerLifetime.Persistent);
 
@@ -25,6 +26,7 @@ var warehouse = builder.AddProject<Projects.Warehouse_Worker>("warehouse-worker"
 //    запити до складу через шину без блокування HTTP.
 // =========================================================================
 var orderApi = builder.AddProject<Projects.Order_Api>("order-api")
+    .WithExternalHttpEndpoints()
     .WithReference(rabbitmq)
     .WaitFor(rabbitmq);
 

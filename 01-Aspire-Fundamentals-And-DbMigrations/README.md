@@ -9,10 +9,8 @@
 ```mermaid
 flowchart TD
     subgraph AspireOrchestration [".NET Aspire AppHost & Dashboard"]
-        AppHost["Aspire.AppHost
-(Оркестратор C#)"]
-        Dashboard["📊 Aspire Dashboard
-(Logs / Metrics / Traces / Endpoints)"]
+        AppHost["Aspire.AppHost<br/>(Оркестратор C#)"]
+        Dashboard["📊 Aspire Dashboard<br/>(Logs / Metrics / Traces / Endpoints)"]
     end
 
     subgraph Infrastructure ["Інфраструктура (Docker)"]
@@ -21,24 +19,22 @@ flowchart TD
     end
 
     subgraph ExecutionFlow ["Життєвий цикл сервісів"]
-        Migrator["⚙️ Catalog.DbMigrator
-(Накладає схему EF Core + Seeding)"]
-        CatalogApi["📦 Catalog.Api
-(REST API Controllers + Swagger)"]
-        ClientWeb["🌐 Client.Web
-(Blazor WebApp)"]
+        Migrator["⚙️ Catalog.DbMigrator<br/>(Накладає схему EF Core + Seeding)"]
+        CatalogApi["📦 Catalog.Api<br/>(REST API Controllers + Swagger UI)"]
+        ClientWeb["🌐 Client.Web<br/>(Blazor WebApp)"]
     end
 
-    AppHost -.->|1. Піднімає контейнер| Postgres
-    AppHost -.->|2. Запускає воркер| Migrator
-    Migrator -->|Застосовує EnsureCreated / Migrate| Postgres
-    Migrator -.->|3. Завершується з кодом 0| AppHost
+    AppHost -.->|"1. Піднімає контейнер"| Postgres
+    Postgres -.-> PgAdmin
+    AppHost -.->|"2. Запускає воркер"| Migrator
+    Migrator -->|"Застосовує EnsureCreated / Migrate"| Postgres
+    Migrator -.->|"3. Завершується з кодом 0"| AppHost
     
-    AppHost ==>|4. WaitForCompletion розблоковує| CatalogApi
-    CatalogApi -->|Читає дані| Postgres
+    AppHost ==>|"4. WaitForCompletion розблоковує"| CatalogApi
+    CatalogApi -->|"Читає та пише дані"| Postgres
     
-    AppHost -.->|5. Запускає вітрину| ClientWeb
-    ClientWeb -->|HTTP GET /api/products через Service Discovery| CatalogApi
+    AppHost -.->|"5. Запускає вітрину"| ClientWeb
+    ClientWeb -->|"HTTP GET /api/products через Service Discovery"| CatalogApi
 ```
 
 ---
@@ -50,7 +46,7 @@ flowchart TD
 | **`Aspire.AppHost`** | .NET Aspire Host | Точка входу оркестрації. Описує топологію всієї системи: PostgreSQL, порядок запуску сервісів (`WaitFor`, `WaitForCompletion`), прокидання рядків підключення. |
 | **`Aspire.ServiceDefaults`** | Shared Library | Встановлює базові стандарти для всіх сервісів: OpenTelemetry (траси, метрики), Health Checks (`/health`, `/alive`), Service Discovery та HTTP Resilience. |
 | **`Catalog.DbMigrator`** | Console App | **Виробничий патерн міграцій:** ізольований воркер, який ініціалізує схему БД у PostgreSQL, наповнює її початковими товарами та штатно завершує процес з кодом `0`. |
-| **`Catalog.Api`** | Web API | REST-сервіс каталогу товарів на базі PostgreSQL (EF Core). Надає ендпоінти `GET /api/products`, `GET /api/products/{id}`, `POST /api/products`. |
+| **`Catalog.Api`** | Web API (Swagger у `/`) | REST-сервіс каталогу товарів на базі PostgreSQL (EF Core). Надає ендпоінти `GET /api/products`, `GET /api/products/{id}`, `POST /api/products` та відкривається одразу в Swagger UI. |
 | **`Client.Web`** | Blazor WebApp | Клієнтський інтерфейс. Звертається до API через `HttpClient` з логічною адресою `https+http://catalog-api`, яку Aspire автоматично резолвить у фізичний порт. |
 
 ---
@@ -92,6 +88,6 @@ var catalogApi = builder.AddProject<Projects.Catalog_Api>("catalog-api")
 4. На панелі Aspire ви побачите:
    - Контейнер `postgres` у стані **Running**.
    - Проєкт `catalog-migrator` у стані **Finished** (Exit Code 0).
-   - Проєкт `catalog-api` у стані **Running**.
+   - Проєкт `catalog-api` у стані **Running** — натисніть на його URL, щоб відкрити **Swagger UI**!
    - Проєкт `client-web` у стані **Running**.
 5. Натисніть на посилання `client-web` $\to$ перейдіть на сторінку **«Каталог товарів»** і переконайтеся, що товари успішно завантажені з PostgreSQL через Service Discovery!

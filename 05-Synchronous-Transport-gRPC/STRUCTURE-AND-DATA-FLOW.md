@@ -1,6 +1,6 @@
 # 05. Архітектура, структура проєктів та рух даних: Синхронний транспорт через gRPC & HTTP/2
 
-> **Детальний технічний опис високоефективного міжсервісного зв'язку через бінарний протокол gRPC (HTTP/2): Unary-виклики, серверний стрімінг (Server Streaming), контрактне проєктування Protobuf та динамічне визначення адрес (Service Discovery) в Aspire.**
+> **Детальна технічна специфікація високошвидкісного міжсервісного зв'язку через бінарний протокол gRPC (HTTP/2): Unary-виклики, серверний стрімінг (`Server Streaming`), контрактне проєктування Protobuf v3 та динамічне виявлення адрес (`Service Discovery`) у .NET Aspire.**
 
 ---
 
@@ -15,23 +15,25 @@
 ├── Aspire.AppHost/                           # Оркестратор .NET Aspire
 │   ├── AppHost.cs                            # Конфігурація зв'язку між gRPC сервером та клієнтом через WithReference
 │   ├── Aspire.AppHost.csproj                 # Aspire.Hosting.AppHost
-│   └── appsettings.json                      # Налаштування
+│   └── appsettings.json                      # Налаштування оркестратора
 │
-├── Aspire.ServiceDefaults/                   # Спільні стандарти
+├── Aspire.ServiceDefaults/                   # Спільні стандарти мікросервісів
 │   ├── Extensions.cs                         # Метрики HTTP/2, трейсинг gRPC запитів, HealthChecks
 │   └── Aspire.ServiceDefaults.csproj         # Пакетні посилання
 │
-├── Inventory.Grpc/                           # gRPC Сервер (Kestrel HTTP/2)
-│   ├── Program.cs                            # Реєстрація gRPC сервера (builder.Services.AddGrpc(), app.MapGrpcService)
-│   ├── Inventory.Grpc.csproj                 # Grpc.AspNetCore, компіляція ProtoRoot GrpcServices="Server"
+├── Inventory.Grpc/                           # gRPC Сервер (Kestrel HTTP/2 + Діагностичний Swagger UI у /)
+│   ├── Program.cs                            # Реєстрація gRPC сервера (AddGrpc, MapGrpcService) та Swagger UI
+│   ├── Inventory.Grpc.csproj                 # Grpc.AspNetCore, Swashbuckle, компіляція Protobuf GrpcServices="Server"
+│   ├── Controllers/
+│   │   └── GrpcDiagnosticsController.cs      # Діагностичний REST-контролер для огляду складу та .proto у браузері
 │   ├── Protos/
 │   │   └── inventory.proto                   # Protobuf v3 контракт сервісу (Unary + Streaming методи)
 │   └── Services/
 │       └── InventoryGrpcServiceImpl.cs       # Реалізація GetProductStock, ReserveStock, GetStockStream
 │
-└── Order.Client.Api/                         # gRPC Клієнт (REST Gateway з ASP.NET Core Controllers)
+└── Order.Client.Api/                         # gRPC Клієнт (REST Gateway зі Swagger UI у корені /)
     ├── Program.cs                            # Налаштування DI, Controllers, Swagger, реєстрація AddGrpcClient
-    ├── Order.Client.Api.csproj               # Grpc.Net.ClientFactory, лінк на Docs
+    ├── Order.Client.Api.csproj               # Grpc.Net.ClientFactory, компіляція Protobuf GrpcServices="Client"
     ├── Controllers/
     │   └── OrdersController.cs               # ASP.NET Core контролер (check-stock, reserve, stream-stock)
     ├── Models/
@@ -46,9 +48,9 @@
 ```mermaid
 classDiagram
     class AppHost {
-        +AddProject<Inventory_Grpc>("inventory-grpc")
-        +AddProject<Order_Client_Api>("order-client-api")
-            .WithReference(inventoryGrpc)
+        +AddProject~Inventory_Grpc~("inventory-grpc")
+        +AddProject~Order_Client_Api~("order-client-api")
+        +WithReference(inventoryGrpc)
     }
 
     class InventoryServiceBase {
@@ -59,10 +61,15 @@ classDiagram
     }
 
     class InventoryGrpcServiceImpl {
-        -ConcurrentDictionary _inventory
+        +ConcurrentDictionary Storage
         +GetProductStock(request, context) Task~ProductStockResponse~
         +ReserveStock(request, context) Task~ReserveStockResponse~
         +GetStockStream(request, responseStream, context) Task
+    }
+
+    class GrpcDiagnosticsController {
+        +GetStockSnapshot() IActionResult
+        +GetProtoContractInfo() IActionResult
     }
 
     class InventoryServiceClient {
@@ -82,9 +89,10 @@ classDiagram
     AppHost ..> InventoryGrpcServiceImpl : Запускає сервер на динамічному HTTP/2 порті
     AppHost ..> OrdersController : Резолвить адресу "https+http://inventory-grpc"
     
-    InventoryGrpcServiceImpl --|> InventoryServiceBase : Реалізує згенерований C# базовий клас
+    InventoryGrpcServiceImpl --|> InventoryServiceBase : Реалізує згенерований з .proto базовий клас
+    GrpcDiagnosticsController --> InventoryGrpcServiceImpl : Читає поточний стан складу для Swagger UI
     OrdersController --> InventoryServiceClient : Використовує згенерований типізований клієнт
-    InventoryServiceClient ..> InventoryGrpcServiceImpl : Двійковий HTTP/2 зв'язок (Protobuf Wire Format)
+    InventoryServiceClient ..> InventoryGrpcServiceImpl : Бінарний HTTP/2 зв'язок (Protobuf Wire Format)
 ```
 
 ---
@@ -96,51 +104,51 @@ classDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Client as 👤 Клієнт / Браузер
-    participant API as Order.Client.Api
+    actor Client as 👤 Клієнт / Swagger
+    participant API as Order.Client.Api (OrdersController)
     participant SD as Aspire Service Discovery
     participant gRPC_Client as InventoryServiceClient
     participant Server as Inventory.Grpc (InventoryGrpcServiceImpl)
 
     Client->>API: GET /api/orders/check-stock/11111111-...
-    API->>SD: Резолв імені "inventory-grpc" у фізичну адресу (e.g. localhost:5124)
-    SD-->>API: URL ескізу Kestrel HTTP/2
-    API->>gRPC_Client: client.GetProductStockAsync(ProductStockRequest)
-    Note over gRPC_Client: Protobuf серіалізує об'єкт у компактні бінарні байти (~20 байт)
+    API->>SD: Резолв логічного імені "inventory-grpc" у фізичний порт Kestrel
+    SD-->>API: Фізичний HTTP/2 Endpoint
+    API->>gRPC_Client: GetProductStockAsync(ProductStockRequest)
+    Note over gRPC_Client: Protobuf кодує об'єкт у компактні бінарні байти (~20 байт)
     gRPC_Client->>Server: HTTP/2 POST /inventory.InventoryService/GetProductStock (DATA Frame)
-    Server->>Server: Пошук у потокобезпечному словнику залишків
-    Server-->>gRPC_Client: HTTP/2 DATA Frame (ProductStockResponse Protobuf) + HEADERS (grpc-status: 0 OK)
-    Note over API: Весь круг (Round-trip) займає 1-3 ms!
-    API-->>Client: HTTP 200 OK (JSON з виміряним часом RoundTripTimeMs)
+    Server->>Server: Миттєвий пошук у потокобезпечному словнику Storage
+    Server-->>gRPC_Client: HTTP/2 DATA Frame (ProductStockResponse) + HEADERS (grpc-status: 0 OK)
+    Note over API: Повний цикл (Round-trip) займає ~1 ms!
+    API-->>Client: HTTP 200 OK (JSON із заміряним RoundTripTimeMs)
 ```
 
 ---
 
-### 2. Server Streaming RPC (Асинхронний потік оновлень за одним запитом)
+### 2. Server Streaming RPC (Асинхронний потік оновлень через одне HTTP/2 з'єднання)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Client as 👤 Клієнт / Фронтенд
-    participant API as Order.Client.Api
+    actor Client as 👤 Клієнт / Swagger
+    participant API as Order.Client.Api (OrdersController)
     participant gRPC_Client as InventoryServiceClient
     participant Server as Inventory.Grpc (GetStockStream)
 
     Client->>API: POST /api/orders/stream-stock { productIds: ["id1", "id2", "id3"] }
-    API->>gRPC_Client: client.GetStockStream(StockStreamRequest)
-    gRPC_Client->>Server: Відправляє один початковий запит зі списком ID
+    API->>gRPC_Client: GetStockStream(StockStreamRequest)
+    gRPC_Client->>Server: Відправляє один початковий фрейм запиту зі списком ID
     
-    Note over Server,gRPC_Client: З'єднання HTTP/2 залишається відкритим!
+    Note over Server,gRPC_Client: Канал HTTP/2 залишається відкритим для потокової передачі!
     
     loop Для кожного запитаного товару
-        Server->>Server: Затримка 150ms (імітація завантаження з БД/складу)
+        Server->>Server: Перевірка наявності товару в Storage
         Server->>gRPC_Client: responseStream.WriteAsync(ProductStockResponse)
-        Note over gRPC_Client: Клієнт миттєво зчитує фрейм через responseStream.MoveNext()
-        gRPC_Client-->>API: Елемент стріму додається до результуючого списку
+        Note over gRPC_Client: Клієнт читає черговий фрейм через ReadAllAsync()
+        gRPC_Client-->>API: Елемент стріму додається до результуючої колекції
     end
     
-    Server-->>gRPC_Client: Відправляє трейлери закінчення стріму (grpc-status: 0)
-    API-->>Client: HTTP 200 OK (Повний масив отриманих товарів)
+    Server-->>gRPC_Client: Завершує стрім HTTP/2 трейлером (grpc-status: 0 OK)
+    API-->>Client: HTTP 200 OK { StreamCompleted: true, TotalItemsReceived: 3, Items: [...] }
 ```
 
 ---
@@ -195,16 +203,16 @@ message StockStreamRequest {
 
 | Носій | Сутність | Формат / Тип | Опис |
 | :--- | :--- | :--- | :--- |
-| **Kestrel In-Memory** | `InventoryGrpcServiceImpl._inventory` | `ConcurrentDictionary<string, StockItem>` | Атомарний стан залишків на складі з потокобезпечним зменшенням залишку |
-| **HTTP/2 Transport** | Protobuf Wire Format | Двійковий потік байтів | Нумерація полів (Tag 1, Tag 2) замість імен ключів економить 70-80% мережевого трафіку |
-| **Service Discovery** | Aspire Service Registry | `https+http://inventory-grpc` | Автоматичне виявлення динамічних портів Kestrel без hardcoded URL |
+| **Kestrel In-Memory** | `InventoryGrpcServiceImpl.Storage` | `ConcurrentDictionary<string, (string, int, double)>` | Атомарний стан залишків на складі з потокобезпечним зменшенням при резервації |
+| **HTTP/2 Transport** | Protobuf Wire Format | Двійковий потік байтів | Передача числових тегів полів (`= 1`, `= 2`) замість текстових ключів заощаджує до 80% трафіку |
+| **Service Discovery** | Aspire Service Registry | `https+http://inventory-grpc` | Автоматичне виявлення динамічних портів Kestrel без жорстко прописаних URL |
 
 ---
 
 ## ⚙️ Критичні переваги gRPC над звичайним REST/JSON
 
 1. **Екстремальна продуктивність і компактність:**
-   - JSON вимагає передачі імен полів текстовими символами у кожному запиті (`"product_name": "Смарт-годинник"`). Protobuf кодує кожне поле як двійковий тег (1-2 байти) та значення, що у 5-10 разів зменшує обсяг корисного навантаження.
+   - JSON вимагає передачі імен полів текстовими символами у кожному запиті (`"product_name": "Смарт-годинник"`). Protobuf кодує кожне поле як двійковий тег (1–2 байти) та значення, що у 5–10 разів зменшує обсяг корисного навантаження.
 2. **Мультиплексування через одне TCP-з'єднання:**
    - Протокол HTTP/2 дозволяє виконувати сотні одночасних Unary або Streaming викликів через **одне-єдине постійне TCP-з'єднання**, виключаючи накладні витрати на повторний TCP Handshake та TLS Negotiate.
 3. **Строга типізація та контрактне проєктування (Schema-First):**

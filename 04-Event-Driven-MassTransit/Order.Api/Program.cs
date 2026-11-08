@@ -18,7 +18,9 @@ builder.Services.AddMassTransit(x =>
     x.UsingRabbitMq((context, cfg) =>
     {
         var config = context.GetRequiredService<IConfiguration>();
-        var connectionString = config.GetConnectionString("eventbus") ?? "amqp://guest:guest@localhost:5672";
+        var connectionString = config.GetConnectionString("messaging")
+            ?? config.GetConnectionString("eventbus")
+            ?? "amqp://guest:guest@localhost:5672";
         cfg.Host(new Uri(connectionString));
 
         cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));

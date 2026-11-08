@@ -22,9 +22,10 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// 2. Реєстрація YARP Reverse Proxy з конфігурації appsettings.json
+// 2. Реєстрація YARP Reverse Proxy з конфігурації appsettings.json та Service Discovery
 builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+    .AddServiceDiscoveryDestinationResolver();
 
 // 3. Контролери та Swagger для шлюзу
 builder.Services.AddControllers();
@@ -69,8 +70,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "YARP Gateway v1");
-        c.RoutePrefix = "swagger";
+        c.RoutePrefix = string.Empty; // Swagger відкривається одразу в корені
     });
+
+    app.MapGet("/swagger", () => Results.Redirect("/"));
 }
 
 app.UseAuthorization();

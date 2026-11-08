@@ -1,6 +1,6 @@
-# 05. High-Performance Synchronous Transport: gRPC vs REST
+# 05. High-Performance Synchronous Transport: gRPC vs REST (.NET 10 & Aspire)
 
-> **Високошвидкісна синхронна взаємодія між мікросервісами за допомогою gRPC та Protobuf у .NET 10 & .NET Aspire:** одноточковий виклик (Unary Call), серверний стрімінг (Server Streaming), мультиплексування HTTP/2 та автоматичний резолв gRPC каналів через Aspire Service Discovery.
+> **Високошвидкісна синхронна взаємодія між мікросервісами за допомогою gRPC та Protobuf у .NET 10 & .NET Aspire:** миттєвий одноточковий виклик (`Unary RPC`), атомарне резервування залишків, серверний стрімінг (`Server Streaming RPC`), мультиплексування HTTP/2 та автоматичний резолв gRPC-каналів через Aspire Service Discovery (`https+http://inventory-grpc`).
 
 ---
 
@@ -8,96 +8,97 @@
 
 ```mermaid
 flowchart LR
-    Client["👤 Клієнт / Swagger"]
+    Client["👤 Клієнт / Swagger UI (/)"]
 
     subgraph AspireOrchestrator [".NET Aspire AppHost & Dashboard"]
         AppHost["Aspire.AppHost"]
-        Discovery["📡 Service Discovery
-('https+http://inventory-grpc')"]
+        Discovery["📡 Service Discovery<br/>('https+http://inventory-grpc')"]
     end
 
-    subgraph Microservices ["Мікросервіси"]
-        OrderClient["🛒 Order.Client.Api
-(Web API + gRPC Client Factory)"]
-        InventoryServer["🏭 Inventory.Grpc
-(gRPC Server на Kestrel HTTP/2)"]
+    subgraph Microservices ["Мікросервіси (.NET 10)"]
+        OrderClient["🛒 Order.Client.Api<br/>(Web API + gRPC Client Factory)"]
+        InventoryServer["🏭 Inventory.Grpc<br/>(gRPC Server HTTP/2 + Diagnostics UI)"]
     end
 
     AppHost -.-> OrderClient
     AppHost -.-> InventoryServer
 
-    Client -->|1. HTTP REST GET /api/orders/check-stock| OrderClient
-    OrderClient -.->|2. Запитує адресу через| Discovery
-    OrderClient ==|3. Бінарний gRPC Unary Call (Protobuf HTTP/2)|==> InventoryServer
-    InventoryServer ==|4. Швидка відповідь &lt; 1ms|==> OrderClient
-    OrderClient -->|5. HTTP JSON результат| Client
+    Client -->|"1. HTTP GET /api/orders/check-stock/{id}"| OrderClient
+    OrderClient -.->|"2. Запитує адресу через"| Discovery
+    OrderClient ==>|"3. Бінарний gRPC Unary Call (Protobuf HTTP/2)"| InventoryServer
+    InventoryServer ==>|"4. Швидка відповідь (~1 ms)"| OrderClient
+    OrderClient -->|"5. HTTP JSON результат"| Client
 
-    Client -->|6. POST /api/orders/stream-stock| OrderClient
-    OrderClient ==|7. gRPC Server Streaming Call|==> InventoryServer
-    InventoryServer --|8. Потік повідомлень у реальному часі|--> OrderClient
+    Client -->|"6. POST /api/orders/stream-stock"| OrderClient
+    OrderClient ==>|"7. gRPC Server Streaming Call"| InventoryServer
+    InventoryServer -->|"8. Потік фреймів у реальному часі"| OrderClient
 ```
 
 ---
 
-## ⚡ Чому gRPC для внутрішніх синхронних викликів?
+## ⚡ Коли потрібен gRPC замість REST або RabbitMQ?
 
-| Критерій | Звичайний HTTP REST (JSON) | gRPC (Protobuf over HTTP/2) |
+Не кожну операцію в мікросервісах можна зробити асинхронною через брокер повідомлень. Коли покупець натискає кнопку «Купити» або переглядає картку товару, система повинна **прямо зараз** перевірити точний залишок на складі та зарезервувати товар.
+
+Для таких внутрішніх синхронних викликів між мікросервісами (`Service-to-Service`) стандарт **gRPC** значно перевершує текстовий REST/JSON:
+
+| Критерій | Класичний HTTP REST (JSON) | gRPC (Protobuf over HTTP/2) |
 | :--- | :--- | :--- |
-| **Формат даних** | Текстовий JSON (багатослівний, накладні витрати на парсинг рядків). | Бінарний Protobuf (у 5-10 разів менший розмір пакету). |
-| **Протокол** | HTTP/1.1 (одне з'єднання на запит, блокування черги Head-of-Line). | HTTP/2 (мультиплексування сотень запитів в одному TCP-з'єднанні). |
-| **Типізація** | Слабко типізований, небезпека зміни полів при релізах. | Строгий контракт `.proto`, автогенерація C# класів. |
-| **Швидкість (Latency)** | Середня (10-50ms залежно від розміру JSON). | Екстремальна (< 1-3ms), ідеально для high-load backend. |
-| **Стрімінг** | Складний (WebSockets або SSE). | Вбудований «з коробки» (Client, Server, Bi-directional). |
+| **Формат передачі даних** | Текстовий JSON (повторення назв полів у кожному пакеті, витрати CPU на парсинг рядків). | Бінарний **Protocol Buffers (Protobuf)** — передаються лише числові теги полів (`1`, `2`, `3`) та стислі байти. Розмір менший у 5–10 разів. |
+| **Мережевий протокол** | Переважно HTTP/1.1 (блокування Head-of-Line, потреба у пулі TCP-з'єднань). | Строго **HTTP/2**: мультиплексування сотень паралельних запитів через **одне-єдине постійне TCP-з'єднання**. |
+| **Контракт і типізація** | Неформальна документація OpenAPI; ризик розсинхронізації типів між командами. | Єдиний строгий файл `.proto`, з якого компілятор автоматично генерує C#-класи сервера та клієнта під час `dotnet build`. |
+| **Затримка (Latency)** | Середня (`5–30 мс` залежно від розміру JSON). | Наднизька (`0.5–2 мс`), ідеально для високочастотних внутрішніх запитів. |
+| **Потокова передача** | Складна реалізація (WebSockets або SSE). | Нативна підтримка `Server Streaming`, `Client Streaming` та `Bi-directional Streaming`. |
 
 ---
 
-## 📂 Склад проєктів
+## 📂 Склад проєктів та контролерів
 
-| Проєкт | Стек | Опис |
+| Проєкт | Стек та роль | Доступні ендпоінти у Swagger UI (`/`) |
 | :--- | :--- | :--- |
-| **`Inventory.Grpc`** | Kestrel + `Grpc.AspNetCore` | gRPC сервер складу. Реалізує контракт `inventory.proto`: `GetProductStock` (наявність), `ReserveStock` (атомарне резервування), `GetStockStream` (потокова видача статусів). |
-| **`Order.Client.Api`** | ASP.NET Core Controllers + `Grpc.Net.ClientFactory` | Клієнтський Web API з `OrdersController`. Впроваджує типізований `InventoryServiceClient`, підключений до сервера через Aspire Service Discovery (`https+http://inventory-grpc`). |
-| **`Aspire.AppHost`** | .NET Aspire | Точка входу: оркеструє gRPC сервер та клієнтський API, автоматично налаштовуючи HTTP/2 ендпоінти. |
-| **`Aspire.ServiceDefaults`** | Shared Library | Встановлює базові стандарти метрик і трасування OpenTelemetry. |
+| **`Order.Client.Api`** | ASP.NET Core Controllers + `Grpc.Net.ClientFactory` | • `GET /api/orders/check-stock/{productId}` — Unary gRPC виклик із заміром `RoundTripTimeMs`.<br>• `POST /api/orders/reserve` — Unary gRPC атомарне резервування.<br>• `POST /api/orders/stream-stock` — Server Streaming gRPC читання потоку через `await foreach`. |
+| **`Inventory.Grpc`** | Kestrel HTTP/2 + `Grpc.AspNetCore` + Діагностичний Swagger UI | • Бінарний gRPC-сервіс `InventoryService` (`inventory.proto`).<br>• `GET /api/grpc-diagnostics/stock-snapshot` — огляд поточного стану складу.<br>• `GET /api/grpc-diagnostics/proto-contract` — опис методів Protobuf-контракту. |
+| **`Aspire.AppHost`** | .NET Aspire Host | Оркеструє обидва сервіси та зв'язує їх через `.WithReference(inventoryGrpc)`. |
+| **`Aspire.ServiceDefaults`** | Shared Library | Наскрізний OpenTelemetry трейсинг gRPC-викликів, метрики та HealthChecks. |
 
 ---
 
-## 🧪 Практичний сценарій тестування через Swagger
+## 🧪 Покроковий сценарій тестування через Swagger
 
-1. **Запустіть AppHost:**
-   ```bash
-   cd 05-Synchronous-Transport-gRPC/Aspire.AppHost
-   dotnet run
+1. **Запустіть оркестратор AppHost:**
+   ```powershell
+   dotnet run --project 05-Synchronous-Transport-gRPC/Aspire.AppHost/Aspire.AppHost.csproj
    ```
-2. Відкрийте **Aspire Dashboard** та перейдіть у Swagger `order-client-api`.
+2. У панелі **Aspire Dashboard** обидва сервіси (`order-client-api` та `inventory-grpc`) мають клікабельні URL, які одразу відкривають **Swagger UI**!
+3. Відкрийте Swagger для **`order-client-api`**:
 
-### Тест 1: Unary Call (Перевірка залишку через gRPC)
-* Виконайте `GET /api/orders/check-stock/11111111-1111-1111-1111-111111111111`.
-* У логах ви побачите:
-  * `Order.Client`: `📞 Виклик gRPC GetProductStock...`
-  * `Inventory.Grpc`: `⚡ [gRPC Server] Запит залишку для товару 11111111...`
-  * Відповідь отримана практично миттєво (`RoundTripTimeMs: < 2ms`), статус `InStock: true`, залишок `50 шт.`
+### Крок 1: Unary Call (Миттєва перевірка залишку через gRPC)
+1. Викличте `GET /api/orders/check-stock/11111111-1111-1111-1111-111111111111`.
+2. Зверніть увагу на відповідь:
+   * Перший виклик встановлює HTTP/2 канал, а кожен наступний виклик виконується за **`RoundTripTimeMs: 0–2 ms`**!
+   * Повертається інформація: `"Смарт-годинник Pro Pulse"`, залишок `50 шт.`, ціна `199.99`.
 
-### Тест 2: Атомарна резервація залишку
-* Виконайте `POST /api/orders/reserve`:
-  ```json
-  {
-    "productId": "22222222-2222-2222-2222-222222222222",
-    "quantity": 5
-  }
-  ```
-* Отримано статус `200 OK`, `ReservationId: "RES-..."`, залишок зменшився з 12 до 7!
-* Якщо спробувати зарезервувати більше, ніж є на складі (наприклад, 100 шт.), сервіс поверне `409 Conflict` із зрозумілим повідомленням від gRPC сервера.
+### Крок 2: Unary Call (Атомарне резервування товару на складі)
+1. Викличте `POST /api/orders/reserve`:
+   ```json
+   {
+     "productId": "22222222-2222-2222-2222-222222222222",
+     "quantity": 5
+   }
+   ```
+2. Сервер `Inventory.Grpc` атомарно зменшить залишок миші `"UltraGlide 4K"` з `12` до `7` і поверне код резервації `RES-...`.
+3. Спробуйте повторно зарезервувати `100` одиниць того ж товару — ви отримаєте `400 Bad Request` із повідомленням про недостатній залишок.
 
-### Тест 3: Серверний стрімінг (Server Streaming)
-* Виконайте `POST /api/orders/stream-stock` зі списком із 3 товарів:
-  ```json
-  {
-    "productIds": [
-      "11111111-1111-1111-1111-111111111111",
-      "22222222-2222-2222-2222-222222222222",
-      "33333333-3333-3333-3333-333333333333"
-    ]
-  }
-  ```
-* Сервер Kestrel через HTTP/2 стрім видає елементи по мірі готовності через `IServerStreamWriter`, а клієнт читає їх асинхронно через `await foreach`!
+### Крок 3: Server Streaming RPC (Асинхронний потік даних по HTTP/2)
+1. Викличте `POST /api/orders/stream-stock` зі списком усіх трьох товарів:
+   ```json
+   {
+     "productIds": [
+       "11111111-1111-1111-1111-111111111111",
+       "22222222-2222-2222-2222-222222222222",
+       "33333333-3333-3333-3333-333333333333"
+     ]
+   }
+   ```
+2. Сервер по черзі записує кожен товар у потік `IServerStreamWriter`, а клієнт вичитує фрейми в реальному часі через `await foreach (var item in call.ResponseStream.ReadAllAsync())`.
+3. Відкрийте вкладку **Traces** в Aspire Dashboard: ви побачите єдиний розподілений трейс, що проходить від HTTP-контролера `Order.Client.Api` крізь gRPC-виклик до `Inventory.Grpc`!

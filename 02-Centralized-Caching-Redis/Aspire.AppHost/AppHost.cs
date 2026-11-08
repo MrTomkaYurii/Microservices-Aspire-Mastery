@@ -14,6 +14,7 @@ var redis = builder.AddRedis("cache")
 //    на Redis Pub/Sub канал для отримання сигналів інвалідації.
 // =========================================================================
 var basket = builder.AddProject<Projects.Basket_Api>("basket-api")
+    .WithExternalHttpEndpoints()
     .WithReference(redis)
     .WaitFor(redis);
 
@@ -23,6 +24,7 @@ var basket = builder.AddProject<Projects.Basket_Api>("basket-api")
 //    та публікує подію в Redis Pub/Sub при зміні ціни або знижки.
 // =========================================================================
 var pricing = builder.AddProject<Projects.Pricing_Api>("pricing-api")
+    .WithExternalHttpEndpoints()
     .WithReference(redis)
     .WaitFor(redis);
 

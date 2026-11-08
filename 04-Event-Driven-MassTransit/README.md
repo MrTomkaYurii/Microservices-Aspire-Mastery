@@ -1,6 +1,6 @@
-# 04. Event-Driven Architecture with MassTransit & RabbitMQ
+# 04. Event-Driven Architecture з MassTransit та RabbitMQ (.NET 10)
 
-> **Побудова Event-Driven мікросервісної архітектури на .NET 10 за допомогою MassTransit поверх RabbitMQ:** патерни Publish/Subscribe, синхронний Request/Response через шину, автоматичне керування топологією брокера, політики повторних спроб (Retry Policies) та автоматичні черги збоїв `_error`.
+> **Побудова подієво-орієнтованої мікросервісної архітектури на .NET 10 за допомогою сервісної шини MassTransit поверх RabbitMQ:** патерни `Publish/Subscribe`, асинхронний діалог `Request/Response` через брокер без блокування потоків, автоматичне керування топологією, політики повторних спроб (`Retry Policies`), консьюмери компенсації `Fault<T>` та черги помилок `_error`.
 
 ---
 
@@ -8,120 +8,118 @@
 
 ```mermaid
 flowchart TD
-    Client["👤 Клієнт / Swagger"]
+    Client["👤 Клієнт / Swagger UI (/)"]
 
     subgraph AspireOrchestration [".NET Aspire AppHost & Dashboard"]
         AppHost["Aspire.AppHost"]
-        Dashboard["📊 Aspire Dashboard & RabbitMQ Management"]
+        Dashboard["📊 Aspire Dashboard & RabbitMQ Management UI"]
     end
 
-    subgraph Microservices ["Мікросервіси"]
-        OrderApi["🛒 Order.Api
-(IPublishEndpoint + IRequestClient)"]
-        Warehouse["🏭 Warehouse.Worker
-(IConsumer&lt;OrderCreatedEvent&gt;,
-IConsumer&lt;CheckStockRequest&gt;,
-IConsumer&lt;Fault&gt;)"]
+    subgraph Microservices ["Бізнес-мікросервіси (.NET 10)"]
+        OrderApi["🛒 Order.Api<br/>(IPublishEndpoint + IRequestClient)"]
+        Warehouse["🏭 Warehouse.Worker<br/>(OrderCreatedConsumer,<br/>CheckStockConsumer,<br/>OrderCreatedFaultConsumer)"]
     end
 
     subgraph MassTransitBus ["Шина повідомлень MassTransit (RabbitMQ)"]
-        EventEx{{"📢 Contracts:OrderCreatedEvent
-(Fanout Exchange)"}}
-        RequestQ[("📥 check-stock-request
-(Очередь запитів)")]
-        ReplyQ[("📤 response-queue
-(Тимчасова черга відповідей)")]
-        ErrorQ[("💀 order-created_error
-(Черга збоїв після вичерпання Retry)")]
+        EventEx["📢 Contracts:OrderCreatedEvent<br/>(Fanout Exchange)"]
+        RequestQ[("📥 check-stock<br/>(Черга запитів складу)")]
+        ReplyQ[("📤 Тимчасова ReplyTo черга<br/>(Автоматична черга відповідей)")]
+        ErrorQ[("💀 order-created_error<br/>(Черга збоїв після 3 спроб Retry)")]
     end
 
     AppHost -.-> OrderApi
     AppHost -.-> Warehouse
 
-    Client -->|1. POST /api/orders (Pub/Sub)| OrderApi
-    OrderApi -->|2. publishEndpoint.Publish| EventEx
-    EventEx --> Warehouse
-    Warehouse -.->|3. Якщо помилка -> 3 спроби Retry -> якщо FAIL| ErrorQ
+    Client -->|"1. POST /api/orders (Pub/Sub)"| OrderApi
+    OrderApi -->|"2. publishEndpoint.Publish"| EventEx
+    EventEx -->|"Доставка в чергу order-created"| Warehouse
+    Warehouse -.->|"3. Якщо помилка -> 3 спроби Retry -> FAIL"| ErrorQ
 
-    Client -->|4. POST /api/orders/check-stock| OrderApi
-    OrderApi -->|5. requestClient.GetResponse| RequestQ
+    Client -->|"4. GET /api/orders/check-stock/{id}"| OrderApi
+    OrderApi -->|"5. requestClient.GetResponse"| RequestQ
     RequestQ --> Warehouse
-    Warehouse -->|6. context.RespondAsync| ReplyQ
-    ReplyQ -->|7. StockAvailableResponse / Unavailable| OrderApi
-    OrderApi -->|8. Відповідь клієнту| Client
+    Warehouse -->|"6. context.RespondAsync"| ReplyQ
+    ReplyQ -->|"7. StockAvailable / StockUnavailable"| OrderApi
+    OrderApi -->|"8. HTTP 200 OK або 400 BadRequest"| Client
 ```
 
 ---
 
-## ⚡ Чому MassTransit замість сирого RabbitMQ.Client?
+## ⚡ Чому MassTransit замість «сирого» `RabbitMQ.Client`?
 
-У модулі `03-RabbitMQ-LowLevel` ми побачили, скільки ручного коду вимагає брокер:
-* Ручне створення каналів (`CreateChannelAsync`), оголошення exchanges, черг і bindings.
-* Ручна серіалізація/десеріалізація JSON і перетворення в байтові масиви `ReadOnlyMemory<byte>`.
-* Ручний ACK/NACK і логіка перенаправлення в DLX.
+У попередньому модулі (`03-RabbitMQ-LowLevel`) ми бачили, скільки низькорівневого інфраструктурного коду доводиться писати вручну:
+* Створення каналів (`CreateChannelAsync`), ручне оголошення `ExchangeDeclareAsync`, `QueueDeclareAsync` та `QueueBindAsync`.
+* Ручна серіалізація в JSON та кодування в `byte[]`.
+* Ручний виклик `BasicAckAsync` / `BasicNackAsync` та конфігурація заголовків `x-dead-letter-exchange`.
 
-**MassTransit бере всю цю рутину на себе:**
-1. **Автоматична топологія:** Створює типізовані обмінники за назвою інтерфейсу/рекорду (`Contracts:OrderCreatedEvent`) і прив'язує черги консьюмерів у стилі kebab-case.
-2. **Вбудовані політики повторів (Retry):** Якщо сервіс тимчасово збійнув, MassTransit автоматично перепробує обробку з заданим інтервалом (наприклад, 3 рази з інтервалом 2с).
-3. **Автоматичні черги `_error` і `_skipped`:** Якщо після всіх повторів повідомлення так і не обробилося, воно автоматично переноситься у чергу `order-created_error` разом із повним StackTrace помилки у заголовках.
-4. **Синхронний Request/Response через шину:** Дозволяє одному сервісу запитати дані у іншого без прямого HTTP-з'єднання, зберігаючи слабку зв'язаність (Loose Coupling).
+**Шина MassTransit автоматизує всю цю рутину за стандартами Enterprise Integration Patterns:**
 
----
-
-## 📂 Склад проєктів
-
-| Проєкт | Роль в системі |
-| :--- | :--- |
-| **`Contracts`** | Спільна бібліотека контрактів подій та запитів: `OrderCreatedEvent`, `CheckStockRequest`, `StockAvailableResponse`, `StockUnavailableResponse`. |
-| **`Order.Api`** | REST API для створення замовлень та перевірки наявності. Впроваджує `IPublishEndpoint` та `IRequestClient<CheckStockRequest>`. |
-| **`Warehouse.Worker`** | Фоновий воркер складу. Містить консьюмери `OrderCreatedConsumer`, `CheckStockConsumer` та `OrderCreatedFaultConsumer`. |
-| **`Aspire.AppHost`** | Оркестратор Aspire, що піднімає контейнер RabbitMQ і запускає обидва сервіси. |
-| **`Aspire.ServiceDefaults`** | Телеметрія OpenTelemetry, HealthChecks і Service Discovery. |
+| Можливість | Сирий `RabbitMQ.Client` | Сервісна шина `MassTransit` |
+| :--- | :--- | :--- |
+| **Топологія бірж і черг** | Ручне оголошення кожного exchange, queue і binding у коді. | Автоматичне створення бірж за іменем C#-типу (`Contracts:OrderCreatedEvent`) та черг у стилі `kebab-case` (`order-created`). |
+| **Серіалізація та метадані** | Голий масив байтів без контексту. | Автоматичний **Message Envelope** з `MessageId`, `CorrelationId`, `ConversationId`, `SourceAddress`, `SentTime` та заголовками W3C-трасування. |
+| **Повторні спроби (Retries)** | Потрібно писати власні таймери або складні TTL-черги. | Один рядок: `cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)))`. |
+| **Обробка Poison Messages** | Ручне налаштування DLX та `BasicNack(requeue: false)`. | Автоматичне переміщення у чергу `<queue>_error` зі збереженням повного StackTrace у заголовках + публікація події `Fault<T>`. |
+| **Діалог Запит-Відповідь** | Потрібно вручну створювати тимчасову чергу `ReplyTo` і зіставляти `CorrelationId`. | Типізований `IRequestClient<TRequest>` з підтримкою поліморфних відповідей `(available, unavailable)`. |
 
 ---
 
-## 🧪 Практичний сценарій тестування через Swagger
+## 📂 Склад проєктів та компонентів
 
-1. **Запустіть AppHost:**
-   ```bash
-   cd 04-Event-Driven-MassTransit/Aspire.AppHost
-   dotnet run
+| Проєкт | Тип | Роль в архітектурі |
+| :--- | :--- | :--- |
+| **`Contracts`** | Class Library | Спільні незмінні C# `record`-контракти: `OrderCreatedEvent`, `CheckStockRequest`, `StockAvailableResponse`, `StockUnavailableResponse`. |
+| **`Order.Api`** | Web API (Swagger у `/`) | Мікросервіс замовлень (`OrdersController`). Публікує події через `IPublishEndpoint` та перевіряє залишки через `IRequestClient<CheckStockRequest>`. |
+| **`Warehouse.Worker`** | Background Worker | Мікросервіс складу. Містить три консьюмери: `OrderCreatedConsumer`, `CheckStockConsumer` та компенсаційний `OrderCreatedFaultConsumer`. |
+| **`Aspire.AppHost`** | .NET Aspire Host | Оркестратор, що піднімає RabbitMQ з Management Plugin і передає рядок з'єднання обом сервісам. |
+| **`Aspire.ServiceDefaults`** | Shared Library | Єдині стандарти OpenTelemetry, HealthChecks (`/health`, `/alive`) та Service Discovery. |
+
+---
+
+## 🧪 Покроковий сценарій тестування у Swagger
+
+1. **Запустіть оркестратор AppHost:**
+   ```powershell
+   dotnet run --project 04-Event-Driven-MassTransit/Aspire.AppHost/Aspire.AppHost.csproj
    ```
-2. Відкрийте Swagger `order-api`.
+2. Відкрийте **Aspire Dashboard** і натисніть на посилання `order-api` — одразу відкриється **Swagger UI**.
 
-### Сценарій 1: Publish / Subscribe (Успішна обробка)
-* Виконайте `POST /api/orders`:
-  ```json
-  {
-    "customerName": "Олександр",
-    "productId": "11111111-1111-1111-1111-111111111111",
-    "productName": "Смарт-годинник Pro Pulse",
-    "unitPrice": 199.99,
-    "quantity": 1
-  }
-  ```
-* У логах `Warehouse.Worker`: `📦 [OrderCreatedConsumer] Отримано замовлення ... зарезервовано на складі!`
+### Сценарій 1: Патерн Publish / Subscribe (Щасливий шлях)
+1. У Swagger викличте `POST /api/orders` з тілом:
+   ```json
+   {
+     "customerName": "Олександр Коваленко",
+     "productId": "11111111-1111-1111-1111-111111111111",
+     "productName": "Смарт-годинник Pro Pulse",
+     "price": 199.99,
+     "quantity": 2
+   }
+   ```
+2. API миттєво поверне статус `202 Accepted` із номером замовлення.
+3. Перегляньте логи `warehouse-worker` у панелі Aspire:
+   * `📦 [OrderCreatedConsumer] Отримано замовлення ...`
+   * `✅ [OrderCreatedConsumer] Товар 'Смарт-годинник Pro Pulse' успішно зарезервовано на складі!`
 
-### Сценарій 2: Демонстрація Retry та відправки в чергу `_error`
-* Виконайте `POST /api/orders`, передавши в полі `customerName` значення зі словом **`SimulateError`**:
-  ```json
-  {
-    "customerName": "Іван-SimulateError",
-    "productId": "11111111-1111-1111-1111-111111111111",
-    "productName": "Смарт-годинник Pro Pulse",
-    "unitPrice": 199.99,
-    "quantity": 1
-  }
-  ```
-* У логах `Warehouse.Worker` ви побачите:
-  1. `💥 [OrderCreatedConsumer] Імітація збою! Спроба №1`
-  2. Пауза 2 секунди $\to$ `💥 Спроба №2`
-  3. Пауза 2 секунди $\to$ `💥 Спроба №3`
-  4. Вичерпання повторів $\to$ спрацьовує `💀 [FAULT CONSUMER] Замовлення остаточно впало!`
-* Зайдіть у RabbitMQ Management UI (`http://localhost:15672`): ви побачите, що повідомлення безпечно осіло в черзі `order-created_error` і не було втрачено!
+### Сценарій 2: Демонстрація Retry Policy, черги `_error` та `Fault<T>`
+1. Викличте `POST /api/orders`, вказавши в полі `customerName` маркер **`SimulateError`**:
+   ```json
+   {
+     "customerName": "Іван-SimulateError",
+     "productId": "11111111-1111-1111-1111-111111111111",
+     "productName": "Смарт-годинник Pro Pulse",
+     "price": 199.99,
+     "quantity": 1
+   }
+   ```
+2. Спостерігайте за логами `warehouse-worker` у реальному часі:
+   * MassTransit перехоплює виняток `InvalidOperationException` і автоматично виконує **3 повторні спроби з інтервалом 2 секунди**.
+   * Після вичерпання ліміту спроб повідомлення переміщується в чергу `order-created_error`.
+   * Автоматично спрацьовує компенсаційний консьюмер `💀 [FAULT CONSUMER]`, який логує причину аварії та запускає процедуру скасування замовлення!
+3. Відкрийте **RabbitMQ Management UI** (вкладка **Queues**): ви побачите 1 збережене повідомлення у черзі `order-created_error`.
 
-### Сценарій 3: Request / Response через шину
-* Виконайте `POST /api/orders/check-stock` з кількістю `2` шт. (товар є на складі):
-  * Отримано статус `200 OK`, `InStock`, код підтвердження `STOCK-OK-...`.
-* Виконайте `POST /api/orders/check-stock` з кількістю `99` шт. (перевищує залишок):
-  * Отримано статус `409 Conflict`, `OutOfStock`, причина: `Недостатньо залишку на складі`.
+### Сценарій 3: Асинхронний Request / Response через брокер
+1. Викличте `GET /api/orders/check-stock/11111111-1111-1111-1111-111111111111?quantity=2`:
+   * Запит летить через RabbitMQ у `Warehouse.Worker`, який перевіряє залишок і відповідає у тимчасову чергу.
+   * Ви отримуєте `200 OK` із кодом підтвердження `STOCK-OK-...` та залишком `50 шт.`
+2. Викличте `GET /api/orders/check-stock/11111111-1111-1111-1111-111111111111?quantity=999` (більше, ніж є на складі):
+   * Консьюмер повертає тип `StockUnavailableResponse`, а контролер транслює його у відповідь `400 Bad Request` із поясненням дефіциту.

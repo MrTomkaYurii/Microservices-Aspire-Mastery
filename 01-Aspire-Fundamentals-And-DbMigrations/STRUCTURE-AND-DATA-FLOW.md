@@ -1,6 +1,6 @@
 # 01. Архітектура, структура проєктів та рух даних: Aspire Fundamentals & DbMigrator
 
-> **Детальний технічний опис структури модулю, дерева файлів, життєвого циклу процесів, взаємодії класів та збереження стану в PostgreSQL.**
+> **Детальний технічний опис структури модуля, дерева файлів, життєвого циклу процесів, взаємодії класів та збереження стану в PostgreSQL.**
 
 ---
 
@@ -25,8 +25,8 @@
 │   ├── Program.cs                         # Застосування EnsureCreated/Migrate, сідинг 5 початкових товарів, код виходу 0
 │   └── Catalog.DbMigrator.csproj          # Посилання на Catalog.Api (доступ до DbContext) та Npgsql
 │
-├── Catalog.Api/                           # Мікросервіс каталогу товарів (REST API)
-│   ├── Program.cs                         # Налаштування DI, Controllers, Swagger, підключення PostgreSQL
+├── Catalog.Api/                           # Мікросервіс каталогу товарів (REST API + Swagger у корені)
+│   ├── Program.cs                         # Налаштування DI, Controllers, Swagger UI (/), підключення PostgreSQL
 │   ├── Catalog.Api.csproj                 # Web SDK, Aspire.Npgsql.EntityFrameworkCore.PostgreSQL, Swagger, лінк на Docs
 │   ├── Controllers/
 │   │   └── ProductsController.cs          # ASP.NET Core контролер (GET /api/products, POST /api/products)
@@ -59,9 +59,9 @@ classDiagram
         +DistributedApplicationBuilder builder
         +AddPostgres("postgres")
         +AddDatabase("catalogdb")
-        +AddProject<Catalog_DbMigrator>()
-        +AddProject<Catalog_Api>()
-        +AddProject<Client_Web>()
+        +AddProject~Catalog_DbMigrator~()
+        +AddProject~Catalog_Api~()
+        +AddProject~Client_Web~()
     }
 
     class CatalogDbContext {
@@ -110,7 +110,7 @@ classDiagram
 
     CatalogDbContext o-- Product : містить сутності
     DbMigratorProgram --> CatalogDbContext : застосовує міграцію і наповнює даними
-    ProductsController --> CatalogDbContext : читає/пише товари через EF Core
+    ProductsController --> CatalogDbContext : читає і пише товари через EF Core
     ProductsRazor --> CatalogApiClient : інжектує для отримання даних
     CatalogApiClient --> ProductsController : викликає HTTP GET через Service Discovery
 ```
@@ -120,6 +120,7 @@ classDiagram
 ## 🔄 Покроковий рух даних (Data Flow)
 
 ### Фаза 1: Запуск та ініціалізація кластера (Життєвий цикл)
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -133,16 +134,17 @@ sequenceDiagram
     Note over Host,PG: Перевірка готовності порту 5432
     Host->>Migrator: 2. Запускає воркер міграцій
     Migrator->>PG: 3. Підключається через "catalogdb" рядок з'єднання
-    Migrator->>PG: 4. EnsureCreatedAsync() (створює таблицю "Products")
+    Migrator->>PG: 4. EnsureCreatedAsync() (створює таблицю Products)
     Migrator->>PG: 5. Якщо порожньо -> InsertRange(5 товарів)
-    Migrator-->>Host: 6. Воркер завершує роботу з кодом Exit Code: 0
+    Migrator-->>Host: 6. Воркер завершує роботу з кодом Exit Code 0
     Note over Host,API: Умова WaitForCompletion(migrator) виконана!
-    Host->>API: 7. Запускає мікросервіс Catalog.Api
+    Host->>API: 7. Запускає мікросервіс Catalog.Api (Swagger у /)
     API->>PG: 8. Перевіряє HealthCheck бази даних
     Host->>Web: 9. Запускає Blazor фронтенд Client.Web
 ```
 
 ### Фаза 2: Обробка користувацького запиту (Runtime Flow)
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -152,15 +154,15 @@ sequenceDiagram
     participant Client as CatalogApiClient
     participant SD as Aspire Service Discovery
     participant API as Catalog.Api
-    participant DB as PostgreSQL ("catalogdb")
+    participant DB as PostgreSQL (catalogdb)
 
     User->>Browser: Переходить за адресою /products
     Browser->>Blazor: Відкриває сторінку
     Blazor->>Client: OnInitializedAsync -> GetProductsAsync()
     Client->>SD: Резолв логічного імені "catalog-api"
-    SD-->>Client: Фізичний адрес: http://localhost:5214
-    Client->>API: HTTP GET http://localhost:5214/api/products
-    API->>DB: EF Core: SELECT "Id", "Name", "Price", ... FROM "Products"
+    SD-->>Client: Фізична адреса: http://localhost:5445
+    Client->>API: HTTP GET http://localhost:5445/api/products
+    API->>DB: EF Core: SELECT Id, Name, Price FROM Products
     DB-->>API: 5 записів товарів
     API-->>Client: HTTP 200 OK (JSON масив товарів)
     Client-->>Blazor: ProductItem[]
